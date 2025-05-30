@@ -10,16 +10,18 @@ export default function CreateTripButton({ onPress }: { onPress: () => void }) {
 
 const styles = StyleSheet.create({
   button: {
-    backgroundColor: "#34573E",
-    padding: 12,
-    borderRadius: 10,
+    backgroundColor: "#AD1328",
+    width: 70,
+    height: 70,
+    borderRadius: 35, // moitié de width/height pour un cercle
     alignItems: "center",
+    justifyContent: "center", // centre le texte verticalement
     margin: 10,
-    height: 70 
   },
   text: {
     color: "white",
     fontWeight: "bold",
-    fontSize: 16,
+    fontSize: 14, // tu peux réduire un peu la taille si besoin
+    textAlign: "center",
   },
 });

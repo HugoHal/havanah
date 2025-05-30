@@ -11,7 +11,7 @@ export default function CreateTripButton({ onPress }: { onPress: () => void }) {
 
 const styles = StyleSheet.create({
   button: {
-    backgroundColor: "#34573E",
+    backgroundColor: "#FF9900",
     padding: 12,
     borderRadius: 10,
     alignItems: "center",
