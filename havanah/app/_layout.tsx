@@ -5,8 +5,6 @@ import { ActivityIndicator } from "react-native";
 export default function TabsLayout() {
   const [fontsLoaded] = useFonts({
     'Castoro': require('../assets/fonts/CastoroTitling-Regular.ttf'),
-    // Ajoute d'autres variantes si besoin
-    // 'MaPolice-Bold': require('../assets/fonts/NOM_DE_TA_POLICE-Bold.ttf'),
   });
 
   if (!fontsLoaded) {
@@ -14,7 +12,15 @@ export default function TabsLayout() {
   }
 
   return (
-    <Tabs>
+    <Tabs
+      screenOptions={{
+        tabBarStyle: {
+          backgroundColor: "#B7CFBD", // Couleur de fond de la barre de navigation
+        },
+        tabBarActiveTintColor: "#34573E", // Couleur de l'onglet actif (optionnel)
+        tabBarInactiveTintColor: "#82A189", // Couleur des onglets inactifs (optionnel)
+      }}
+    >
       <Tabs.Screen name="acceuil" options={{ title: "Accueil" }} />
       <Tabs.Screen name="spots" options={{ title: "Spots" }} />
       <Tabs.Screen name="itineraires" options={{ title: "Itinéraires" }} />

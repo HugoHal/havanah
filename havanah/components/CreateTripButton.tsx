@@ -18,7 +18,7 @@ const styles = StyleSheet.create({
     margin: 10,
   },
   text: {
-    color: "white",
+    color: "#000",
     fontWeight: "bold",
     fontSize: 16,
   },
