@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ImageBackground, FlatList } from "react-native";
 import { Stack } from "expo-router";
 import CarteSpots from "../components/CarteSpots";
@@ -6,10 +6,19 @@ import CreateTripButton from "../components/CreateTripButton";
 import StartTrip from "../components/StartTrip";
 import Logo from "../assets/images/logo.svg";
 import { useSpotSearch } from "../hooks/useSpots";
+import PopularTrips, { PopularTripsRef } from "../components/PopularTrips";
+import { getItinerairePopulaire } from "../services/itineraireService";
+import ItineraireFiche from "../components/ItineraireFiche";
+import { Itineraire } from "../types/Itineraire";
 
 export default function AccueilScreen() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedItineraire, setSelectedItineraire] = useState<Itineraire | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
   const { results, loading: searchLoading, search } = useSpotSearch();
+  
+  // Ref pour pouvoir réinitialiser la sélection
+  const popularTripsRef = useRef<PopularTripsRef>(null);
 
   const handleCreateTrip = () => {
     console.log("Créer un itinéraire");
@@ -22,6 +31,24 @@ export default function AccueilScreen() {
   const handleSearch = (text: string) => {
     setSearchQuery(text);
     search(text);
+  };
+
+  const handlePeriodSelect = (period: 'court' | 'moyen' | 'long') => {
+    console.log(`Durée sélectionnée dans accueil: ${period}`);
+    const itineraire = getItinerairePopulaire(period);
+    setSelectedItineraire(itineraire);
+    setModalVisible(true);
+  };
+
+  const closeModal = () => {
+    setModalVisible(false);
+    // Réinitialiser la sélection du bouton
+    popularTripsRef.current?.resetSelection();
+    
+    // Attendre la fin de l'animation avant de supprimer l'itinéraire
+    setTimeout(() => {
+      setSelectedItineraire(null);
+    }, 250);
   };
 
   return (
@@ -67,28 +94,22 @@ export default function AccueilScreen() {
         </View>
       </View>
       
-      {/* Container pour la section itinéraires populaires */}
-      <View style={styles.popularTripsContainer}>
-        <Text style={styles.subtitle}>Itinéraires populaires</Text>
-        <Text style={styles.littlewords}>Inspire toi des aventures les plus aimée de la communauté van life</Text>
-
-        <View style={{ flexDirection: "row", justifyContent: "space-around", gap: 1 }}>
-          <TouchableOpacity style={styles.btnPopu}>
-            <Text style={styles.text}>semaine</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.btnPopu}>
-            <Text style={styles.text}>mois</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.btnPopu}>
-            <Text style={styles.text}>année</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+      <PopularTrips 
+        ref={popularTripsRef}
+        onPeriodSelect={handlePeriodSelect}
+      />
       
       <CreateTripButton onPress={handleCreateTrip} />
     </View>
+
+    {/* Modal qui s'affiche par-dessus */}
+    {selectedItineraire && (
+      <ItineraireFiche 
+        itineraire={selectedItineraire}
+        visible={modalVisible}
+        onClose={closeModal}
+      />
+    )}
     </>
   );
 }
@@ -207,27 +228,6 @@ const styles = StyleSheet.create({
     textShadowOffset: {width: -1, height: 1},
     textShadowRadius: 10
   },
-  subtitle: { 
-    textAlign: "center", 
-    fontSize: 20, 
-    marginBottom: 0, 
-    marginTop: 0,
-    // Ombre pour le sous-titre
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: {width: 0, height: 1},
-    textShadowRadius: 3
-  },
-  littlewords: {
-    textAlign: "center",
-    fontSize: 14,
-    color: "#000",
-    marginBottom: 10,
-    marginHorizontal: 20,
-    // Ombre pour les petites phrases
-    textShadowColor: 'rgba(0, 0, 0, 0.2)',
-    textShadowOffset: {width: 0, height: 1},
-    textShadowRadius: 2
-  },
   mapLabel: {
     position: "absolute",
     top: 10,
@@ -265,19 +265,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#666",
     marginTop: 2,
-  },
-  popularTripsContainer: {
-    backgroundColor: "#E7D4BB",
-    marginTop: 20,
-    marginHorizontal: 15,
-    paddingVertical: 20,
-    paddingHorizontal: 15,
-    borderRadius: 15,
-    // Ombre pour le container
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 5,
   },
 });

@@ -1,65 +1,111 @@
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { useState, useRef } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
 import { Stack } from "expo-router";
 import CreateTripButton from "../components/CreateTripButton";
+import PopularTrips, { PopularTripsRef } from "../components/PopularTrips";
+import { getItinerairePopulaire } from "../services/itineraireService";
+import ItineraireFiche from "../components/ItineraireFiche";
+import { Itineraire } from "../types/Itineraire";
 
+export default function ItinerairesScreen() {
+  const [selectedItineraire, setSelectedItineraire] = useState<Itineraire | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  
+  // Refs pour pouvoir réinitialiser les sélections
+  const popularTripsRef = useRef<PopularTripsRef>(null);
+  const favoritesTripsRef = useRef<PopularTripsRef>(null);
 
-export default function SpotsScreen() {
   const handleCreateTrip = () => {
     console.log("Créer un itinéraire");
+  };
+
+  const handlePopularSelect = (period: 'court' | 'moyen' | 'long') => {
+    console.log(`Itinéraires populaires: ${period}`);
+    const itineraire = getItinerairePopulaire(period);
+    setSelectedItineraire(itineraire);
+    setModalVisible(true);
+  };
+
+  const handleFavoritesSelect = (period: 'court' | 'moyen' | 'long') => {
+    console.log(`Mes favoris: ${period}`);
+    // Tu peux créer une autre fonction pour les favoris
+  };
+
+  const closeModal = () => {
+    setModalVisible(false);
+    // Réinitialiser les sélections des boutons
+    popularTripsRef.current?.resetSelection();
+    favoritesTripsRef.current?.resetSelection();
+    
+    // Attendre la fin de l'animation avant de supprimer l'itinéraire
+    setTimeout(() => {
+      setSelectedItineraire(null);
+    }, 250);
   };
 
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <Text style={styles.title}> ITINERAIRES </Text>
-        <Text style={styles.subtitle}>Les populaires</Text>
-        <View style={{ flexDirection: "row", justifyContent: "space-around", gap: 1 }}>
-          <TouchableOpacity style={styles.btnPopu}>
-            <Text style={styles.text}>semaine</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.btnPopu}>
-            <Text style={styles.text}>mois</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.btnPopu}>
-            <Text style={styles.text}>année</Text>
-          </TouchableOpacity>
+      <View style={styles.container}>
+        {/* En-tête avec direction artistique verte */}
+        <View style={styles.header}>
+          <Text style={styles.pageTitle}>ITINÉRAIRES</Text>
         </View>
-        <Text style={styles.subtitle}>Mes favoris</Text>
-        <View style={{ flexDirection: "row", justifyContent: "space-around", gap: 1 }}>
-          <TouchableOpacity style={styles.btnPopu}>
-            <Text style={styles.text}>semaine</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.btnPopu}>
-            <Text style={styles.text}>mois</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.btnPopu}>
-            <Text style={styles.text}>année</Text>
-          </TouchableOpacity>
-        </View>
+        
+        <PopularTrips 
+          ref={popularTripsRef}
+          onPeriodSelect={handlePopularSelect}
+          containerStyle={{ marginTop: 10 }}
+        />
+        
+        <PopularTrips 
+          ref={favoritesTripsRef}
+          title="Mes favoris"
+          subtitle="Tes itinéraires sauvegardés et préférés"
+          onPeriodSelect={handleFavoritesSelect}
+        />
+        
         <CreateTripButton onPress={handleCreateTrip} />
       </View>
+
+      {/* Modal qui s'affiche par-dessus */}
+      {selectedItineraire && (
+        <ItineraireFiche 
+          itineraire={selectedItineraire}
+          visible={modalVisible}
+          onClose={closeModal}
+        />
+      )}
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  text: {
-    color: "#fff",
-    fontSize: 16,
+  container: {
+    flex: 1,
+    backgroundColor: "#82A189",
+  },
+  header: {
+    backgroundColor: "#34573E",
+    paddingTop: 50,
+    paddingBottom: 20,
+    paddingHorizontal: 20,
+    borderBottomLeftRadius: 25,
+    borderBottomRightRadius: 25,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 10,
+  },
+  pageTitle: {
     textAlign: "center",
+    fontSize: 28,
+    fontWeight: "bold",
+    color: "#fff",
+    letterSpacing: 2,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
-  title: { textAlign: "center", fontSize: 20, marginBottom: 10, marginTop: 30, fontWeight: "bold" },
-  subtitle: { textAlign: "center", fontSize: 20, marginBottom: 10, marginTop: 30, fontWeight: "bold" },
-  btnPopu: {
-    backgroundColor: "#D4C1A7",
-    padding: 15,
-    borderRadius: 12,
-    marginBottom: 15,
-    flex: 1
-  },
-})
+});
