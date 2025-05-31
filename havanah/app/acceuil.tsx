@@ -40,7 +40,7 @@ export default function AccueilScreen() {
       </ImageBackground>
       
       <View style={styles.mapContainer}>
-        <Text style={styles.mapLabel}>SPOT</Text>
+        <Text style={styles.mapLabel}>SPOTS</Text>
         <CarteSpots />
         <View style={styles.searchBarWrapper}>
           <TextInput

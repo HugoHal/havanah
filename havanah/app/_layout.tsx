@@ -1,6 +1,9 @@
 import { Tabs } from "expo-router";
 import { useFonts } from "expo-font";
 import { ActivityIndicator } from "react-native";
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 
 export default function TabsLayout() {
   const [fontsLoaded] = useFonts({
@@ -21,11 +24,51 @@ export default function TabsLayout() {
         tabBarInactiveTintColor: "#82A189", // Couleur des onglets inactifs (optionnel)
       }}
     >
-      <Tabs.Screen name="acceuil" options={{ title: "Accueil" }} />
-      <Tabs.Screen name="spots" options={{ title: "Spots" }} />
-      <Tabs.Screen name="itineraires" options={{ title: "Itinéraires" }} />
-      <Tabs.Screen name="communaute" options={{ title: "Communauté" }} />
-      <Tabs.Screen name="profil" options={{ title: "Profil" }} />
+      <Tabs.Screen 
+        name="acceuil" 
+        options={{ 
+          title: "Accueil",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="home" size={size} color={color} />
+          ),
+        }} 
+      />
+      <Tabs.Screen 
+        name="spots" 
+        options={{ 
+          title: "Spots",
+          tabBarIcon: ({ color, size }) => (
+            <MaterialIcons name="place" size={size} color={color} />
+          ),
+        }} 
+      />
+      <Tabs.Screen 
+        name="itineraires" 
+        options={{ 
+          title: "Itinéraires",
+          tabBarIcon: ({ color, size }) => (
+            <MaterialIcons name="map" size={size} color={color} />
+          ),
+        }} 
+      />
+      <Tabs.Screen 
+        name="communaute" 
+        options={{ 
+          title: "Communauté",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="people" size={size} color={color} />
+          ),
+        }} 
+      />
+      <Tabs.Screen 
+        name="profil" 
+        options={{ 
+          title: "Profil",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="person" size={size} color={color} />
+          ),
+        }} 
+      />
     </Tabs>
   );
 }
