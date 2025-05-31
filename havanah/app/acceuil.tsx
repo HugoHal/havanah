@@ -17,7 +17,6 @@ export default function AccueilScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const { results, loading: searchLoading, search } = useSpotSearch();
   
-  // Ref pour pouvoir réinitialiser la sélection
   const popularTripsRef = useRef<PopularTripsRef>(null);
 
   const handleCreateTrip = () => {
@@ -42,10 +41,8 @@ export default function AccueilScreen() {
 
   const closeModal = () => {
     setModalVisible(false);
-    // Réinitialiser la sélection du bouton
     popularTripsRef.current?.resetSelection();
     
-    // Attendre la fin de l'animation avant de supprimer l'itinéraire
     setTimeout(() => {
       setSelectedItineraire(null);
     }, 250);
@@ -66,6 +63,7 @@ export default function AccueilScreen() {
         </View>
       </ImageBackground>
       
+      {/* Container de la carte SANS overflow hidden */}
       <View style={styles.mapContainer}>
         <Text style={styles.mapLabel}>SPOTS</Text>
         <CarteSpots />
@@ -76,23 +74,25 @@ export default function AccueilScreen() {
             value={searchQuery}
             onChangeText={handleSearch}
           />
-          
-          {/* Résultats de recherche */}
-          {searchQuery.length > 0 && (
-            <FlatList
-              data={results}
-              style={styles.searchResults}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <TouchableOpacity style={styles.searchResultItem}>
-                  <Text style={styles.searchResultTitle}>{item.nom}</Text>
-                  <Text style={styles.searchResultDescription}>{item.description}</Text>
-                </TouchableOpacity>
-              )}
-            />
-          )}
         </View>
       </View>
+      
+      {/* Résultats de recherche EN DEHORS du mapContainer */}
+      {searchQuery.length > 0 && (
+        <View style={styles.searchResultsContainer}>
+          <FlatList
+            data={results}
+            style={styles.searchResults}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <TouchableOpacity style={styles.searchResultItem}>
+                <Text style={styles.searchResultTitle}>{item.nom}</Text>
+                <Text style={styles.searchResultDescription}>{item.description}</Text>
+              </TouchableOpacity>
+            )}
+          />
+        </View>
+      )}
       
       <PopularTrips 
         ref={popularTripsRef}
@@ -102,7 +102,6 @@ export default function AccueilScreen() {
       <CreateTripButton onPress={handleCreateTrip} />
     </View>
 
-    {/* Modal qui s'affiche par-dessus */}
     {selectedItineraire && (
       <ItineraireFiche 
         itineraire={selectedItineraire}
@@ -135,10 +134,9 @@ const styles = StyleSheet.create({
     position: "relative",
     alignSelf: "center",
     borderRadius: 20,
-    overflow: "hidden",
+    // SUPPRIMÉ: overflow: "hidden",
     marginTop: -50,
     zIndex: 1,
-    // Ombre pour la carte
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -157,19 +155,48 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
   },
+  // NOUVEAU: Container pour les résultats en dehors
+  searchResultsContainer: {
+    width: "95%",
+    alignSelf: "center",
+    marginTop: -2, // Léger ajustement pour coller à la barre de recherche
+    zIndex: 10,
+  },
   input: {
     backgroundColor: "#FF9900",
     padding: 12,
     borderRadius: 10,
     fontSize: 16,
-    marginBottom: 10,
     fontWeight: "bold",
-    // Ombre pour l'input
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 3,
     elevation: 4,
+  },
+  searchResults: {
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    maxHeight: 200,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 6,
+  },
+  searchResultItem: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+  searchResultTitle: {
+    fontWeight: "bold",
+    fontSize: 14,
+  },
+  searchResultDescription: {
+    fontSize: 12,
+    color: "#666",
+    marginTop: 2,
   },
   btnSmall: {
     backgroundColor: "#34573E",
@@ -177,7 +204,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 12,
     marginBottom: 10,
-    // Ombre pour les petits boutons
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
@@ -190,7 +216,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 14,
     marginBottom: 10,
-    // Ombre pour les boutons moyens
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.25,
@@ -203,7 +228,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 15,
     flex: 1,
-    // Ombre pour les boutons populaires
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.2,
@@ -239,31 +263,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     fontWeight: "bold",
     fontSize: 16,
-    // Ombre pour le label de la carte
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 3,
     elevation: 4,
-  },
-  searchResults: {
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    marginTop: 5,
-    maxHeight: 200,
-  },
-  searchResultItem: {
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-  },
-  searchResultTitle: {
-    fontWeight: "bold",
-    fontSize: 14,
-  },
-  searchResultDescription: {
-    fontSize: 12,
-    color: "#666",
-    marginTop: 2,
   },
 });
