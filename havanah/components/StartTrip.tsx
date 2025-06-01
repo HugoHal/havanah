@@ -1,52 +1,113 @@
-import { Pressable, StyleSheet } from "react-native";
-import Svg, { Circle, TextPath, Text as SvgText, Defs, Path } from "react-native-svg";
+import React, { forwardRef } from "react";
+import { Pressable, StyleSheet, Animated, Image, Dimensions } from "react-native";
 
-export default function StartTrip({ onPress }: { onPress: () => void }) {
-  return (
-    <Pressable style={styles.button} onPress={onPress}>
-      <Svg height="80" width="80" viewBox="0 0 80 80">
-        <Defs>
-          {/* Chemin circulaire pour le texte */}
-          <Path
-            id="topCircle"
-            d="M 15, 40 A 25 25 0 0 1 65 40"
-          />
-          <Path
-            id="bottomCircle"
-            d="M 10, 40 A 30 30 0 0 0 70 40"
-          />
-        </Defs>
-        
-        {/* Cercle de fond */}
-        <Circle cx="40" cy="40" r="35" fill="#FF9900" />
-        
-        {/* Texte courbe en haut */}
-        <SvgText fontSize="10" fontWeight="bold" fill="#000" letterSpacing="1.5">
-          <TextPath href="#topCircle" startOffset="25%" textAnchor="middle">
-            PARTIR
-          </TextPath>
-        </SvgText>
-        
-        {/* Texte courbe en bas */}
-        <SvgText fontSize="10" fontWeight="bold" fill="#000" letterSpacing="1.5">
-          <TextPath href="#bottomCircle" startOffset="25%" textAnchor="middle">
-            EN TRIP
-          </TextPath>
-        </SvgText>
-      </Svg>
-    </Pressable>
-  );
+const { width, height } = Dimensions.get("window");
+const FINAL_SIZE = width * 0.92; // même que TripModal
+const BUTTON_SIZE = 80;
+const X_OFFSET = -20; // Décalage vers la gauche à la fin de l'animation
+const Y_OFFSET = 4;
+
+export interface StartTripRef {
+  playOpen: () => void;
+  playClose: () => void;
 }
 
+const StartTrip = forwardRef<StartTripRef, {
+  onOpen: () => void;
+  animation: Animated.Value;
+}>(({ onOpen, animation }, ref) => {
+  // Positions
+  const startX = width - BUTTON_SIZE / 2;
+  const startY = BUTTON_SIZE / 2;
+  const endX = width / 2;
+  const endY = height / 2;
+
+  // Interpolations
+  const scale = animation.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, FINAL_SIZE / BUTTON_SIZE],
+  });
+  const translateX = animation.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -(startX - endX) - X_OFFSET],
+  });
+  const translateY = animation.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, endY - startY - Y_OFFSET],
+  });
+  const rotate = animation.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0deg", "360deg"],
+  });
+
+  React.useImperativeHandle(ref, () => ({
+    playOpen: () => {
+      Animated.timing(animation, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }).start(onOpen);
+    },
+    playClose: () => {
+      Animated.timing(animation, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true,
+      }).start();
+    },
+  }));
+
+  return (
+    <Animated.View
+      style={[
+        styles.animatedButton,
+        {
+          transform: [
+            { translateX },
+            { translateY },
+            { scale },
+            { rotate },
+          ],
+        },
+      ]}
+    >
+      <Pressable style={styles.button} onPress={() => ref && (ref as any).current.playOpen()}>
+        <Image
+          source={require("../assets/images/trip_image.png")}
+          style={styles.image}
+          resizeMode="cover"
+        />
+      </Pressable>
+    </Animated.View>
+  );
+});
+
+export default StartTrip;
+
 const styles = StyleSheet.create({
+  animatedButton: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    zIndex: 10,
+  },
   button: {
-    width: 80,
-    height: 80,
-    margin: 10,
+    width: BUTTON_SIZE,
+    height: BUTTON_SIZE,
+    borderRadius: BUTTON_SIZE / 2,
+    overflow: "hidden",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#fff",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 3,
     elevation: 4,
+  },
+  image: {
+    width: BUTTON_SIZE,
+    height: BUTTON_SIZE,
+    borderRadius: BUTTON_SIZE / 2,
   },
 });

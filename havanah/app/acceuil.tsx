@@ -1,30 +1,43 @@
 import { useState, useRef } from "react";
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ImageBackground, FlatList } from "react-native";
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ImageBackground, FlatList, Animated } from "react-native";
 import { Stack } from "expo-router";
 import CarteSpots from "../components/CarteSpots";
 import CreateTripButton from "../components/CreateTripButton";
-import StartTrip from "../components/StartTrip";
+import StartTrip, { StartTripRef } from "../components/StartTrip";
 import Logo from "../assets/images/logo.svg";
 import { useSpotSearch } from "../hooks/useSpots";
 import PopularTrips, { PopularTripsRef } from "../components/PopularTrips";
 import { getItinerairePopulaire } from "../services/itineraireService";
 import ItineraireFiche from "../components/ItineraireFiche";
 import { Itineraire } from "../types/Itineraire";
+import TripModal from "../components/TripModal";
 
 export default function AccueilScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedItineraire, setSelectedItineraire] = useState<Itineraire | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
-  const { results, loading: searchLoading, search } = useSpotSearch();
-  
+  const [tripModalVisible, setTripModalVisible] = useState(false);
+  const animation = useRef(new Animated.Value(0)).current;
   const popularTripsRef = useRef<PopularTripsRef>(null);
+  const startTripRef = useRef<StartTripRef>(null);
 
   const handleCreateTrip = () => {
     console.log("Créer un itinéraire");
   };
 
   const handleStartTrip = () => {
-    console.log("Démarrer un trip");
+    startTripRef.current?.playOpen();
+  };
+
+  const handleTripModalOpen = () => {
+    setTripModalVisible(true);
+  };
+
+  const handleTripModalClose = () => {
+    setTripModalVisible(false);
+    setTimeout(() => {
+      startTripRef.current?.playClose();
+    }, 10);
   };
 
   const handleSearch = (text: string) => {
@@ -48,6 +61,19 @@ export default function AccueilScreen() {
     }, 250);
   };
 
+  const handleOpen = () => setModalVisible(true);
+  const handleClose = () => {
+    setModalVisible(false);
+    // Animation inverse
+    setTimeout(() => {
+      if (startTripRef.current?.animateClose) {
+        startTripRef.current.animateClose();
+      }
+    }, 10);
+  };
+
+  const { results, loading: searchLoading, search } = useSpotSearch();
+
   return (
     <>
     <Stack.Screen options={{ headerShown: false }} />
@@ -59,7 +85,11 @@ export default function AccueilScreen() {
       >
         <View style={styles.headerRow}>
           <Text style={styles.title}> HAVANAH </Text>
-          <StartTrip onPress={handleStartTrip}/>
+          <StartTrip
+            onOpen={handleTripModalOpen}
+            ref={startTripRef}
+            animation={animation}
+          />
         </View>
       </ImageBackground>
       
@@ -109,6 +139,7 @@ export default function AccueilScreen() {
         onClose={closeModal}
       />
     )}
+    <TripModal visible={tripModalVisible} onClose={handleTripModalClose} />
     </>
   );
 }
