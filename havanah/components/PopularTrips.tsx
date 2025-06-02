@@ -74,7 +74,7 @@ export default PopularTrips;
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#E7D4BB",
+    backgroundColor: "#bec4c7", // Remplacé ici
     marginTop: 20,
     marginHorizontal: 15,
     paddingVertical: 20,

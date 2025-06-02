@@ -1,19 +1,31 @@
-import { useState, useRef } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { useState, useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView } from 'react-native';
 import { Stack } from "expo-router";
 import CreateTripButton from "../components/CreateTripButton";
 import PopularTrips, { PopularTripsRef } from "../components/PopularTrips";
 import { getItinerairePopulaire } from "../services/itineraireService";
 import ItineraireFiche from "../components/ItineraireFiche";
 import { Itineraire } from "../types/Itineraire";
+import { userService } from "../services/userService";
+import { ItineraireUser } from "../types/User";
 
 export default function ItinerairesScreen() {
   const [selectedItineraire, setSelectedItineraire] = useState<Itineraire | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [userItineraires, setUserItineraires] = useState<ItineraireUser[]>([]);
+  const [favoriteItineraires, setFavoriteItineraires] = useState<ItineraireUser[]>([]);
   
   // Refs pour pouvoir réinitialiser les sélections
   const popularTripsRef = useRef<PopularTripsRef>(null);
   const favoritesTripsRef = useRef<PopularTripsRef>(null);
+
+  useEffect(() => {
+    userService.getUserItineraires().then(setUserItineraires);
+  }, []);
+
+  useEffect(() => {
+    userService.getFavoriteItineraires().then(setFavoriteItineraires);
+  }, []);
 
   const handleCreateTrip = () => {
     console.log("Créer un itinéraire");
@@ -47,35 +59,87 @@ export default function ItinerairesScreen() {
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.container}>
-        {/* En-tête avec direction artistique verte */}
-        <View style={styles.header}>
-          <Text style={styles.pageTitle}>ITINÉRAIRES</Text>
-        </View>
-        
-        <PopularTrips 
-          ref={popularTripsRef}
-          onPeriodSelect={handlePopularSelect}
-          containerStyle={{ marginTop: 10 }}
-        />
-        
-        <PopularTrips 
-          ref={favoritesTripsRef}
-          title="Mes favoris"
-          subtitle="Tes itinéraires sauvegardés et préférés"
-          onPeriodSelect={handleFavoritesSelect}
-        />
-        
-        <CreateTripButton onPress={handleCreateTrip} />
-      </View>
+        <ScrollView
+          contentContainerStyle={{ paddingBottom: 30 }}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* En-tête avec direction artistique verte */}
+          <View style={styles.header}>
+            <Text style={styles.pageTitle}>ITINÉRAIRES</Text>
+          </View>
+          
+          <PopularTrips 
+            ref={popularTripsRef}
+            onPeriodSelect={handlePopularSelect}
+            containerStyle={{ marginTop: 10 }}
+          />
 
-      {/* Modal qui s'affiche par-dessus */}
-      {selectedItineraire && (
-        <ItineraireFiche 
-          itineraire={selectedItineraire}
-          visible={modalVisible}
-          onClose={closeModal}
-        />
-      )}
+          <CreateTripButton onPress={handleCreateTrip} />
+          
+          {/* Mes itinéraires section */}
+          {userItineraires.length > 0 && (
+            <View style={styles.myItinerairesSection}>
+              <Text style={styles.myItinerairesTitle}>Mes itinéraires</Text>
+              <FlatList
+                data={userItineraires}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                keyExtractor={item => item.id}
+                contentContainerStyle={styles.myItinerairesList}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={styles.myItineraireCard}
+                    onPress={() => {
+                      setSelectedItineraire(item);
+                      setModalVisible(true);
+                    }}
+                  >
+                    <Text style={styles.myItineraireName}>{item.nom}</Text>
+                    <Text style={styles.myItineraireDesc} numberOfLines={2}>{item.description}</Text>
+                    <Text style={styles.myItineraireInfo}>{item.duree} • {item.distance}</Text>
+                  </TouchableOpacity>
+                )}
+              />
+            </View>
+          )}
+          
+          {/* Mes favoris section */}
+          {favoriteItineraires.length > 0 && (
+            <View style={styles.myItinerairesSection}>
+              <Text style={styles.myItinerairesTitle}>Mes favoris</Text>
+              <FlatList
+                data={favoriteItineraires}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                keyExtractor={item => item.id}
+                contentContainerStyle={styles.myItinerairesList}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={styles.myItineraireCard}
+                    onPress={() => {
+                      setSelectedItineraire(item);
+                      setModalVisible(true);
+                    }}
+                  >
+                    <Text style={styles.myItineraireName}>{item.nom}</Text>
+                    <Text style={styles.myItineraireDesc} numberOfLines={2}>{item.description}</Text>
+                    <Text style={styles.myItineraireInfo}>{item.duree} • {item.distance}</Text>
+                  </TouchableOpacity>
+                )}
+              />
+            </View>
+          )}
+        </ScrollView>
+
+        {/* Modal qui s'affiche par-dessus */}
+        {selectedItineraire && (
+          <ItineraireFiche 
+            itineraire={selectedItineraire}
+            visible={modalVisible}
+            onClose={closeModal}
+          />
+        )}
+      </View>
     </>
   );
 }
@@ -107,5 +171,48 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0, 0, 0, 0.3)',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
+  },
+  myItinerairesSection: {
+    marginTop: 10,
+    marginBottom: 10,
+    paddingLeft: 15,
+  },
+  myItinerairesTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#34573E",
+    marginBottom: 8,
+    marginLeft: 2,
+  },
+  myItinerairesList: {
+    paddingBottom: 8,
+  },
+  myItineraireCard: {
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    padding: 14,
+    marginRight: 12,
+    width: 200,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  myItineraireName: {
+    fontWeight: "bold",
+    fontSize: 15,
+    color: "#34573E",
+    marginBottom: 4,
+  },
+  myItineraireDesc: {
+    fontSize: 13,
+    color: "#333",
+    marginBottom: 6,
+  },
+  myItineraireInfo: {
+    fontSize: 12,
+    color: "#666",
+    fontStyle: "italic",
   },
 });

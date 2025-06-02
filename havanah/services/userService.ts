@@ -151,6 +151,38 @@ class UserService {
     CURRENT_USER.photoProfil = photoBase64;
     return photoBase64;
   }
+
+  async getFavoriteItineraires(): Promise<ItineraireUser[]> {
+    // Remplace ce mock par ton vrai appel API ou stockage local
+    return [
+      {
+        id: "fav1",
+        nom: "Roadtrip Bretagne",
+        description: "Un super roadtrip en Bretagne",
+        duree: "3 jours",
+        distance: "400 km",
+        spots: ["Rennes", "Quimper", "Vannes"],
+        note: 4.7,
+        nbVues: 320,
+        isPublic: true,
+        createdAt: new Date('2024-04-01'),
+        image: "https://example.com/bretagne.jpg",
+      },
+      {
+        id: "fav2",
+        nom: "Tour du Sud",
+        description: "Découverte du sud de la France",
+        duree: "5 jours",
+        distance: "800 km",
+        spots: ["Marseille", "Nice", "Montpellier"],
+        note: 4.9,
+        nbVues: 410,
+        isPublic: false,
+        createdAt: new Date('2024-03-15'),
+        image: "https://example.com/sud.jpg",
+      }
+    ];
+  }
 }
 
 export const userService = new UserService();

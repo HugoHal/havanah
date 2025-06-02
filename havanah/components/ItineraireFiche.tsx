@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    backgroundColor: "#E7D4BB",
+    backgroundColor: "#bec4c7", // Remplacé ici
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     shadowColor: "#000",

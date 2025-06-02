@@ -22,6 +22,9 @@ export default function TabsLayout() {
         },
         tabBarActiveTintColor: "#34573E", // Couleur de l'onglet actif (optionnel)
         tabBarInactiveTintColor: "#82A189", // Couleur des onglets inactifs (optionnel)
+        tabBarLabelStyle: {
+          fontSize: 8, 
+        },
       }}
     >
       <Tabs.Screen 

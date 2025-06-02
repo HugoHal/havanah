@@ -4,7 +4,7 @@ import { View, Text, Pressable, StyleSheet } from "react-native";
 export default function CreateTripButton({ onPress }: { onPress: () => void }) {
   return (
     <Pressable style={styles.button} onPress={onPress}>
-      <Text style={styles.text}>Créer ton itinéraire</Text>
+      <Text style={styles.text}>Créer ton itinéraire personnalisé</Text>
     </Pressable>
   );
 }

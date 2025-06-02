@@ -11,18 +11,20 @@ import { getItinerairePopulaire } from "../services/itineraireService";
 import ItineraireFiche from "../components/ItineraireFiche";
 import { Itineraire } from "../types/Itineraire";
 import TripModal from "../components/TripModal";
+import CreateTripModal from "../components/CreateTripModal";
 
 export default function AccueilScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedItineraire, setSelectedItineraire] = useState<Itineraire | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [tripModalVisible, setTripModalVisible] = useState(false);
+  const [createTripVisible, setCreateTripVisible] = useState(false);
   const animation = useRef(new Animated.Value(0)).current;
   const popularTripsRef = useRef<PopularTripsRef>(null);
   const startTripRef = useRef<StartTripRef>(null);
 
   const handleCreateTrip = () => {
-    console.log("Créer un itinéraire");
+    setCreateTripVisible(true);
   };
 
   const handleStartTrip = () => {
@@ -66,8 +68,8 @@ export default function AccueilScreen() {
     setModalVisible(false);
     // Animation inverse
     setTimeout(() => {
-      if (startTripRef.current?.animateClose) {
-        startTripRef.current.animateClose();
+      if (startTripRef.current?.playClose) {
+        startTripRef.current.playClose();
       }
     }, 10);
   };
@@ -130,6 +132,8 @@ export default function AccueilScreen() {
       />
       
       <CreateTripButton onPress={handleCreateTrip} />
+
+      <CreateTripModal visible={createTripVisible} onClose={() => setCreateTripVisible(false)} />
     </View>
 
     {selectedItineraire && (
@@ -165,7 +169,8 @@ const styles = StyleSheet.create({
     position: "relative",
     alignSelf: "center",
     borderRadius: 20,
-    // SUPPRIMÉ: overflow: "hidden",
+    borderTopLeftRadius: 20,      // <-- Ajouté
+    borderTopRightRadius: 20,     // <-- Ajouté
     marginTop: -50,
     zIndex: 1,
     shadowColor: "#000",
@@ -173,6 +178,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 10,
+    backgroundColor: "#bec4c7",
   },
   searchBarWrapper: {
     position: "absolute",

@@ -1,6 +1,6 @@
 // components/CarteSpots.tsx
 import React, { useEffect, useState, useRef } from "react";
-import { StyleSheet, ActivityIndicator, Alert, View } from "react-native";
+import { StyleSheet, ActivityIndicator, Alert, View, ViewStyle } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
 import { useSpots } from "../hooks/useSpots";
@@ -42,7 +42,7 @@ export default function CarteSpots() {
 
   // Fonction pour créer un marker personnalisé
   const getCustomMarker = (type: string) => {
-    const markerStyle = {
+    const markerStyle: ViewStyle = {
       backgroundColor: '#fff',
       borderRadius: 20,
       padding: 8,
@@ -95,32 +95,34 @@ export default function CarteSpots() {
   }
 
   return (
-    <MapView
-      ref={mapRef}
-      style={styles.map}
-      initialRegion={{
-        latitude: location.latitude,
-        longitude: location.longitude,
-        latitudeDelta: 0.05,
-        longitudeDelta: 0.05,
-      }}
-      showsUserLocation={true}
-      onMapReady={handleMapReady}
-    >
-      {spots.map((spot) => (
-        <Marker
-          key={spot.id}
-          coordinate={{
-            latitude: spot.latitude,
-            longitude: spot.longitude,
-          }}
-          title={spot.nom}
-          description={`${spot.description} - ${spot.prix ? `${spot.prix}€` : 'Gratuit'}`}
-        >
-          {getCustomMarker(spot.type)}
-        </Marker>
-      ))}
-    </MapView>
+    <View style={{ flex: 1, backgroundColor: "transparent", borderRadius: 20, overflow: "hidden" }}>
+      <MapView
+        ref={mapRef}
+        style={styles.map}
+        initialRegion={{
+          latitude: location.latitude,
+          longitude: location.longitude,
+          latitudeDelta: 0.05,
+          longitudeDelta: 0.05,
+        }}
+        showsUserLocation={true}
+        onMapReady={handleMapReady}
+      >
+        {spots.map((spot) => (
+          <Marker
+            key={spot.id}
+            coordinate={{
+              latitude: spot.latitude,
+              longitude: spot.longitude,
+            }}
+            title={spot.nom}
+            description={`${spot.description} - ${spot.prix ? `${spot.prix}€` : 'Gratuit'}`}
+          >
+            {getCustomMarker(spot.type)}
+          </Marker>
+        ))}
+      </MapView>
+    </View>
   );
 }
 
