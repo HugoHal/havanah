@@ -110,24 +110,24 @@ export default function ProfilScreen() {
     );
   }
 
-  const renderStats = () => (
+  const renderStats = (onStatPress: (tab: TabType) => void) => (
     <View style={styles.content}>
       <View style={styles.statsGrid}>
-        <View style={styles.statCard}>
+        <TouchableOpacity style={styles.statCard} onPress={() => onStatPress('itineraires')}>
           <Ionicons name="create" size={24} color="#34573E" />
           <Text style={styles.statNumber}>{user.statistiques.nbItinerairesCreees}</Text>
           <Text style={styles.statLabel}>Itinéraires créés</Text>
-        </View>
-        <View style={styles.statCard}>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.statCard} onPress={() => onStatPress('faits')}>
           <Ionicons name="checkmark-circle" size={24} color="#FF9900" />
           <Text style={styles.statNumber}>{user.statistiques.nbItinerairesFaits}</Text>
           <Text style={styles.statLabel}>Itinéraires faits</Text>
-        </View>
-        <View style={styles.statCard}>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.statCard} onPress={() => onStatPress('spots')}>
           <Ionicons name="location" size={24} color="#82A189" />
           <Text style={styles.statNumber}>{user.statistiques.nbSpotsFaits}</Text>
           <Text style={styles.statLabel}>Spots visités</Text>
-        </View>
+        </TouchableOpacity>
         <View style={styles.statCard}>
           <Ionicons name="car" size={24} color="#E7D4BB" />
           <Text style={styles.statNumber}>{user.statistiques.kmParcourus.toLocaleString()}</Text>
@@ -173,11 +173,11 @@ export default function ProfilScreen() {
 
   const renderTabContent = () => {
     switch (activeTab) {
-      case 'stats': return renderStats();
+      case 'stats': return renderStats(setActiveTab);
       case 'itineraires': return renderItineraires();
       case 'faits': return renderItinerairesFaits();
       case 'spots': return renderSpotsVisites();
-      default: return renderStats();
+      default: return renderStats(setActiveTab);
     }
   };
 
