@@ -25,6 +25,7 @@ export interface ItineraireUser {
   isPublic: boolean;
   createdAt: Date;
   image?: string;
+  co2Economise: number; // ✅ Nouveau: CO2 économisé en kg
 }
 
 export interface SpotVisite {

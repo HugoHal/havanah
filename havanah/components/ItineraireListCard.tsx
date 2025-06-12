@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { ItineraireUser } from '../types/User';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import CO2Badge from './CO2Badge'; // ✅ Import ajouté
 
 interface ItineraireListCardProps {
   itineraire: ItineraireUser;
@@ -58,6 +59,9 @@ export default function ItineraireListCard({ itineraire, showCompleted = false }
           <Text style={styles.infoText}>{itineraire.nbVues}</Text>
         </View>
       </View>
+      
+      {/* ✅ Ajout du CO2 économisé */}
+      <CO2Badge co2Economise={itineraire.co2Economise} size="small" style={styles.co2Badge} />
       
       <Text style={styles.spotsCount}>
         {itineraire.spots.length} spots • {itineraire.spots.slice(0, 3).join(', ')}
@@ -155,5 +159,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
     fontStyle: 'italic',
+  },
+  co2Badge: {
+    alignSelf: 'flex-start',
+    marginTop: 8,
   },
 });

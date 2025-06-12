@@ -15,6 +15,7 @@ import { Itineraire, DetailedRoute } from '../types/Itineraire';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import ItineraireMap from './ItineraireMap';
 import NavigationView from './NavigationView';
+import CO2Badge from './CO2Badge'; // ✅ Import ajouté
 
 interface ItineraireFicheProps {
   itineraire: Itineraire;
@@ -216,6 +217,8 @@ export default function ItineraireFiche({ itineraire, visible, onClose }: Itiner
                 <Ionicons name="star" size={18} color="#FF9900" />
                 <Text style={styles.infoText}>{itineraire.note}/5</Text>
               </View>
+              {/* ✅ Ajout du CO2 économisé */}
+              <CO2Badge co2Economise={itineraire.co2Economise} size="small" />
             </View>
             
             <Text style={styles.spotsTitle}>Spots inclus :</Text>

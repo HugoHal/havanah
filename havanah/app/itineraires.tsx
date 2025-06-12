@@ -10,6 +10,7 @@ import { userService } from "../services/userService";
 import { ItineraireUser } from "../types/User";
 import CreateTripModal from "../components/CreateTripModal";
 import ItinerairesMap from "../components/ItinerairesMap"; // ✅ Import ajouté
+import CO2Badge from "../components/CO2Badge"; // ✅ Import ajouté
 
 export default function ItinerairesScreen() {
   const [selectedItineraire, setSelectedItineraire] = useState<Itineraire | null>(null);
@@ -113,6 +114,8 @@ export default function ItinerairesScreen() {
                     <Text style={styles.myItineraireName}>{item.nom}</Text>
                     <Text style={styles.myItineraireDesc} numberOfLines={2}>{item.description}</Text>
                     <Text style={styles.myItineraireInfo}>{item.duree} • {item.distance}</Text>
+                    {/* ✅ Ajout du CO2 économisé */}
+                    <CO2Badge co2Economise={item.co2Economise} size="small" style={styles.co2Badge} />
                   </TouchableOpacity>
                 )}
               />
@@ -140,6 +143,8 @@ export default function ItinerairesScreen() {
                     <Text style={styles.myItineraireName}>{item.nom}</Text>
                     <Text style={styles.myItineraireDesc} numberOfLines={2}>{item.description}</Text>
                     <Text style={styles.myItineraireInfo}>{item.duree} • {item.distance}</Text>
+                    {/* ✅ Ajout du CO2 économisé */}
+                    <CO2Badge co2Economise={item.co2Economise} size="small" style={styles.co2Badge} />
                   </TouchableOpacity>
                 )}
               />
@@ -242,5 +247,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#666",
     fontStyle: "italic",
+  },
+  co2Badge: {
+    marginTop: 8,
+    alignSelf: 'flex-start',
   },
 });

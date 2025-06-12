@@ -4,6 +4,7 @@ import { Calendar } from "react-native-calendars";
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import CO2Badge from './CO2Badge'; // ✅ Import ajouté
 
 const { width } = Dimensions.get("window");
 const BG_HEIGHT = 200;
@@ -63,7 +64,8 @@ const MOCK_PROPOSED_ITINERAIRES = [
     ],
     color: "#FF9900",
     description: "Découvrez les plus belles plages de l'Hérault",
-    budget: "200-300€"
+    budget: "200-300€",
+    co2Economise: 135, // ✅ Ajouté
   },
   {
     id: 2,
@@ -79,7 +81,8 @@ const MOCK_PROPOSED_ITINERAIRES = [
     ],
     color: "#4CAF50",
     description: "Immersion nature entre gorges et montagnes",
-    budget: "150-250€"
+    budget: "150-250€",
+    co2Economise: 190, // ✅ Ajouté
   },
   {
     id: 3,
@@ -95,7 +98,8 @@ const MOCK_PROPOSED_ITINERAIRES = [
     ],
     color: "#2196F3",
     description: "Découverte du patrimoine historique régional",
-    budget: "250-350€"
+    budget: "250-350€",
+    co2Economise: 160, // ✅ Ajouté
   }
 ];
 
@@ -347,6 +351,8 @@ export default function CreateTripModal({ visible, onClose }: { visible: boolean
                           <Ionicons name="wallet" size={16} color="#666" />
                           <Text style={styles.statText}>{itinerary.budget}</Text>
                         </View>
+                        {/* ✅ Ajout du CO2 économisé */}
+                        <CO2Badge co2Economise={itinerary.co2Economise} size="small" />
                       </View>
                       
                       <View style={styles.highlightsContainer}>
@@ -1838,5 +1844,25 @@ const styles = StyleSheet.create({
       color: '#34573E',
       fontWeight: 'bold',
       fontSize: 14,
+    },
+    // Styles du composant CO2Badge
+    badgeContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: '#E8F5E8',
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 12,
+      gap: 4,
+    },
+    badgeValue: {
+      fontSize: 12,
+      fontWeight: 'bold',
+      color: '#4CAF50',
+    },
+    badgeText: {
+      fontSize: 10,
+      color: '#4CAF50',
+      fontWeight: '500',
     },
 });

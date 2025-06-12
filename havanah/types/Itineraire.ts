@@ -10,6 +10,7 @@ export interface Itineraire {
   nbVues: number;
   createdAt: Date;
   image?: string;
+  co2Economise: number; // ✅ Nouveau: CO2 économisé en kg
   
   // Nouvelles propriétés pour les trajets détaillés
   waypoints?: Waypoint[]; // Points de passage principaux (spots)
