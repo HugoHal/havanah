@@ -1,17 +1,29 @@
 import { Tabs } from "expo-router";
 import { useFonts } from "expo-font";
-import { ActivityIndicator } from "react-native";
+import { ActivityIndicator, View, StyleSheet } from "react-native";
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
+import { useAuth } from "../hooks/useAuth";
+import LoginScreen from "../components/LoginScreen";
 
 export default function TabsLayout() {
   const [fontsLoaded] = useFonts({
     'Castoro': require('../assets/fonts/CastoroTitling-Regular.ttf'),
   });
 
-  if (!fontsLoaded) {
-    return <ActivityIndicator />;
+  const { isAuthenticated, loading, login } = useAuth();
+
+  if (!fontsLoaded || loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#34573E" />
+      </View>
+    );
+  }
+
+  // Afficher l'écran de connexion si pas authentifié
+  if (isAuthenticated === false) {
+    return <LoginScreen onLogin={login} />;
   }
 
   return (
@@ -75,3 +87,12 @@ export default function TabsLayout() {
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#82A189',
+  },
+});

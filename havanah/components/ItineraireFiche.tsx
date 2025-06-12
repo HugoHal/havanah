@@ -1,18 +1,20 @@
 // components/ItineraireFiche.tsx
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
   StyleSheet, 
-  TouchableOpacity, 
   Modal, 
+  TouchableOpacity, 
+  TouchableWithoutFeedback, 
   Animated, 
-  Dimensions,
-  TouchableWithoutFeedback,
-  ScrollView
+  Dimensions, 
+  ScrollView 
 } from 'react-native';
-import { Itineraire } from '../types/Itineraire';
+import { Itineraire, DetailedRoute } from '../types/Itineraire';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import ItineraireMap from './ItineraireMap';
+import NavigationView from './NavigationView';
 
 interface ItineraireFicheProps {
   itineraire: Itineraire;
@@ -25,6 +27,8 @@ const { height: screenHeight } = Dimensions.get('window');
 export default function ItineraireFiche({ itineraire, visible, onClose }: ItineraireFicheProps) {
   const slideAnim = useRef(new Animated.Value(screenHeight)).current;
   const [isFavorite, setIsFavorite] = useState(false);
+  const [showNavigation, setShowNavigation] = useState(false);
+  const [loadingRoute, setLoadingRoute] = useState(false);
 
   useEffect(() => {
     if (visible) {
@@ -46,12 +50,35 @@ export default function ItineraireFiche({ itineraire, visible, onClose }: Itiner
 
   const handleComment = () => {
     console.log("Ouvrir l'interface de commentaire");
-    // Ici tu pourras ouvrir un modal de commentaire ou naviguer vers une page de commentaires
   };
 
   const handleFavorite = () => {
     setIsFavorite(!isFavorite);
     console.log(isFavorite ? "Retiré des favoris" : "Ajouté aux favoris");
+  };
+
+  // Fonction pour charger/utiliser la route détaillée
+  const loadDetailedRoute = async () => {
+    if (!itineraire.waypoints || loadingRoute) return;
+    
+    setLoadingRoute(true);
+    try {
+      // Vérifier si on a déjà une route détaillée dans les données
+      if (itineraire.detailedRoute && 
+          itineraire.detailedRoute.path && 
+          itineraire.detailedRoute.path.length > 0) {
+        console.log('Utilisation de la route détaillée existante');
+        setShowNavigation(true);
+      } else {
+        console.log('Pas de route détaillée disponible pour cet itinéraire');
+        // Optionnel : afficher un message à l'utilisateur
+        // Alert.alert('Information', 'Navigation détaillée non disponible pour cet itinéraire');
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement de la route:', error);
+    } finally {
+      setLoadingRoute(false);
+    }
   };
 
   return (
@@ -113,6 +140,68 @@ export default function ItineraireFiche({ itineraire, visible, onClose }: Itiner
             scrollEventThrottle={16}
           >
             <Text style={styles.description}>{itineraire.description}</Text>
+            
+            {/* Nouvelle section carte de trajet */}
+            {itineraire.waypoints && itineraire.waypoints.length > 0 && (
+              <>
+                <Text style={styles.sectionTitle}>Trajet détaillé :</Text>
+                
+                {!showNavigation ? (
+                  <>
+                    <ItineraireMap itineraire={itineraire} showRoute={true} />
+                    
+                    {/* Bouton navigation seulement si on a une route détaillée */}
+                    {itineraire.detailedRoute && (
+                      <TouchableOpacity 
+                        style={styles.navigationButton}
+                        onPress={loadDetailedRoute}
+                        disabled={loadingRoute}
+                      >
+                        <Ionicons name="navigate" size={20} color="#fff" />
+                        <Text style={styles.navigationButtonText}>
+                          {loadingRoute ? 'Chargement...' : 'Navigation détaillée'}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {itineraire.detailedRoute && (
+                      <NavigationView route={itineraire.detailedRoute} />
+                    )}
+                    
+                    <TouchableOpacity 
+                      style={styles.backButton}
+                      onPress={() => setShowNavigation(false)}
+                    >
+                      <Ionicons name="arrow-back" size={20} color="#fff" />
+                      <Text style={styles.navigationButtonText}>Retour à la vue générale</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+                
+                {/* Liste des étapes */}
+                <Text style={styles.sectionTitle}>Étapes du voyage :</Text>
+                {itineraire.waypoints
+                  .sort((a, b) => a.order - b.order)
+                  .map((waypoint, index) => (
+                    <View key={waypoint.id} style={styles.waypointItem}>
+                      <View style={styles.waypointNumber}>
+                        <Text style={styles.waypointNumberText}>{index + 1}</Text>
+                      </View>
+                      <View style={styles.waypointInfo}>
+                        <Text style={styles.waypointName}>{waypoint.name}</Text>
+                        {waypoint.description && (
+                          <Text style={styles.waypointDescription}>{waypoint.description}</Text>
+                        )}
+                        {waypoint.estimatedArrivalTime && (
+                          <Text style={styles.waypointTime}>Arrivée : {waypoint.estimatedArrivalTime}</Text>
+                        )}
+                      </View>
+                    </View>
+                  ))}
+              </>
+            )}
             
             <View style={styles.infosRow}>
               <View style={styles.infoItem}>
@@ -190,7 +279,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    backgroundColor: "#bec4c7", // Remplacé ici
+    backgroundColor: "#bec4c7",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     shadowColor: "#000",
@@ -344,5 +433,71 @@ const styles = StyleSheet.create({
   },
   bottomSpace: {
     height: 30,
+  },
+  waypointItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 15,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    padding: 12,
+    borderRadius: 10,
+  },
+  waypointNumber: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: '#FF9900',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  waypointNumberText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  waypointInfo: {
+    flex: 1,
+  },
+  waypointName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#34573E',
+    marginBottom: 4,
+  },
+  waypointDescription: {
+    fontSize: 14,
+    color: '#333',
+    marginBottom: 2,
+  },
+  waypointTime: {
+    fontSize: 12,
+    color: '#666',
+    fontStyle: 'italic',
+  },
+  navigationButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FF9900',
+    padding: 15,
+    borderRadius: 12,
+    marginVertical: 10,
+    gap: 10,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#34573E',
+    padding: 12,
+    borderRadius: 12,
+    marginVertical: 10,
+    gap: 10,
+  },
+  navigationButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });

@@ -3,17 +3,21 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView } from '
 import { Stack } from "expo-router";
 import CreateTripButton from "../components/CreateTripButton";
 import PopularTrips, { PopularTripsRef } from "../components/PopularTrips";
-import { getItinerairePopulaire } from "../services/itineraireService";
+import { getItinerairePopulaire, getAllItineraires } from "../services/itineraireService"; // ✅ Import ajouté
 import ItineraireFiche from "../components/ItineraireFiche";
 import { Itineraire } from "../types/Itineraire";
 import { userService } from "../services/userService";
 import { ItineraireUser } from "../types/User";
+import CreateTripModal from "../components/CreateTripModal";
+import ItinerairesMap from "../components/ItinerairesMap"; // ✅ Import ajouté
 
 export default function ItinerairesScreen() {
   const [selectedItineraire, setSelectedItineraire] = useState<Itineraire | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [createTripVisible, setCreateTripVisible] = useState(false);
   const [userItineraires, setUserItineraires] = useState<ItineraireUser[]>([]);
   const [favoriteItineraires, setFavoriteItineraires] = useState<ItineraireUser[]>([]);
+  const [allItineraires, setAllItineraires] = useState<Itineraire[]>([]); // ✅ État ajouté
   
   // Refs pour pouvoir réinitialiser les sélections
   const popularTripsRef = useRef<PopularTripsRef>(null);
@@ -27,8 +31,14 @@ export default function ItinerairesScreen() {
     userService.getFavoriteItineraires().then(setFavoriteItineraires);
   }, []);
 
+  // ✅ Charger tous les itinéraires pour la carte
+  useEffect(() => {
+    const itineraires = getAllItineraires();
+    setAllItineraires(itineraires);
+  }, []);
+
   const handleCreateTrip = () => {
-    console.log("Créer un itinéraire");
+    setCreateTripVisible(true);
   };
 
   const handlePopularSelect = (period: 'court' | 'moyen' | 'long') => {
@@ -41,6 +51,12 @@ export default function ItinerairesScreen() {
   const handleFavoritesSelect = (period: 'court' | 'moyen' | 'long') => {
     console.log(`Mes favoris: ${period}`);
     // Tu peux créer une autre fonction pour les favoris
+  };
+
+  // ✅ Fonction pour sélectionner un itinéraire depuis la carte
+  const handleMapItineraireSelect = (itineraire: Itineraire) => {
+    setSelectedItineraire(itineraire);
+    setModalVisible(true);
   };
 
   const closeModal = () => {
@@ -129,9 +145,15 @@ export default function ItinerairesScreen() {
               />
             </View>
           )}
+
+          {/* ✅ Carte interactive des itinéraires */}
+          <ItinerairesMap 
+            itineraires={allItineraires}
+            onItineraireSelect={handleMapItineraireSelect}
+          />
         </ScrollView>
 
-        {/* Modal qui s'affiche par-dessus */}
+        {/* Modal d'itinéraire qui s'affiche par-dessus */}
         {selectedItineraire && (
           <ItineraireFiche 
             itineraire={selectedItineraire}
@@ -139,6 +161,12 @@ export default function ItinerairesScreen() {
             onClose={closeModal}
           />
         )}
+
+        {/* Modal de création d'itinéraire */}
+        <CreateTripModal 
+          visible={createTripVisible} 
+          onClose={() => setCreateTripVisible(false)} 
+        />
       </View>
     </>
   );

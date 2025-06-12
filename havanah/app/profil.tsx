@@ -17,6 +17,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import ItineraireListCard from '../components/ItineraireListCard';
 import SpotVisiteCard from '../components/SpotVisiteCard';
 import * as ImagePicker from 'expo-image-picker';
+import { useAuth } from '../hooks/useAuth';
 
 type TabType = 'stats' | 'itineraires' | 'faits' | 'spots';
 
@@ -28,6 +29,7 @@ export default function ProfilScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('stats');
+  const { logout } = useAuth();
 
   const loadData = async () => {
     try {
@@ -89,6 +91,23 @@ export default function ProfilScreen() {
     });
   };
 
+  const handleLogout = async () => {
+    Alert.alert(
+      'Déconnexion',
+      'Êtes-vous sûr de vouloir vous déconnecter ?',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        { 
+          text: 'Déconnexion', 
+          style: 'destructive',
+          onPress: async () => {
+            await logout();
+          }
+        }
+      ]
+    );
+  };
+
   useEffect(() => {
     loadData();
   }, []);
@@ -141,6 +160,12 @@ export default function ProfilScreen() {
           <Text style={styles.bioText}>{user.bio}</Text>
         </View>
       )}
+
+      {/* Bouton de déconnexion */}
+      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+        <Ionicons name="log-out" size={20} color="#fff" />
+        <Text style={styles.logoutText}>Se déconnecter</Text>
+      </TouchableOpacity>
     </View>
   );
 
@@ -443,5 +468,20 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginBottom: 15,
     textAlign: 'center',
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FF4444',
+    padding: 15,
+    borderRadius: 12,
+    marginTop: 20,
+    gap: 8,
+  },
+  logoutText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
