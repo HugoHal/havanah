@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, Modal, TouchableOpacity, ImageBackground, Dimensions, SafeAreaView, ScrollView, TextInput } from "react-native";
+import { Modal, View, StyleSheet, Dimensions, TouchableOpacity, Text, TextInput, ImageBackground, ScrollView } from "react-native";
+import { Calendar } from "react-native-calendars";
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { Calendar } from 'react-native-calendars';
-import MapView, { Marker } from 'react-native-maps';
+import MapView, { Marker, Polyline } from 'react-native-maps';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get("window");
 const BG_HEIGHT = 200;
@@ -46,6 +47,58 @@ const QUESTIONS = [
     }
 ];
 
+// Données mockées pour les 3 itinéraires proposés
+const MOCK_PROPOSED_ITINERAIRES = [
+  {
+    id: 1,
+    title: "Côte Méditerranéenne",
+    duration: "5 jours",
+    distance: "320 km",
+    highlights: ["Montpellier", "Palavas", "Sète", "Cap d'Agde"],
+    path: [
+      [43.6108, 3.8767], // Montpellier
+      [43.5285, 3.9310], // Palavas
+      [43.4023, 3.6967], // Sète
+      [43.3089, 3.4814], // Cap d'Agde
+    ],
+    color: "#FF9900",
+    description: "Découvrez les plus belles plages de l'Hérault",
+    budget: "200-300€"
+  },
+  {
+    id: 2,
+    title: "Arrière-pays & Nature",
+    duration: "7 jours", 
+    distance: "450 km",
+    highlights: ["Montpellier", "Saint-Guilhem", "Millau", "Cévennes"],
+    path: [
+      [43.6108, 3.8767], // Montpellier
+      [43.7314, 3.5483], // Saint-Guilhem-le-Désert
+      [44.0993, 3.0808], // Millau
+      [44.1944, 3.8333], // Cévennes
+    ],
+    color: "#4CAF50",
+    description: "Immersion nature entre gorges et montagnes",
+    budget: "150-250€"
+  },
+  {
+    id: 3,
+    title: "Circuit Culturel",
+    duration: "6 jours",
+    distance: "380 km", 
+    highlights: ["Montpellier", "Nîmes", "Arles", "Avignon"],
+    path: [
+      [43.6108, 3.8767], // Montpellier
+      [43.8367, 4.3601], // Nîmes
+      [43.6761, 4.6309], // Arles
+      [43.9493, 4.8059], // Avignon
+    ],
+    color: "#2196F3",
+    description: "Découverte du patrimoine historique régional",
+    budget: "250-350€"
+  }
+];
+
 export default function CreateTripModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
     const [step, setStep] = useState(0);
     const [dateType, setDateType] = useState<"precise" | "approx" | null>(null);
@@ -72,6 +125,10 @@ export default function CreateTripModal({ visible, onClose }: { visible: boolean
     const [activities, setActivities] = useState<string[]>([]);
     const [eco, setEco] = useState<string | null>(null);
     const [constraints, setConstraints] = useState<string[]>([]);
+    const [showResults, setShowResults] = useState(false); // ✅ Nouvel état pour l'étape résultats
+    const [selectedItinerary, setSelectedItinerary] = useState<number | null>(null); // ✅ Itinéraire sélectionné
+
+    const insets = useSafeAreaInsets();
 
     const handleSearch = async () => {
         if (!search) return;
@@ -116,6 +173,9 @@ export default function CreateTripModal({ visible, onClose }: { visible: boolean
         console.log("Activités :", activities);
         console.log("Écoresponsable :", eco);
         console.log("Contraintes :", constraints);
+        
+        // ✅ Au lieu de fermer directement, passer aux résultats
+        setShowResults(true);
     };
 
     const resetForm = () => {
@@ -144,13 +204,192 @@ export default function CreateTripModal({ visible, onClose }: { visible: boolean
         setActivities([]);
         setEco(null);
         setConstraints([]);
+        setShowResults(false); // ✅ Reset du nouvel état
+        setSelectedItinerary(null); // ✅ Reset de la sélection
     };
+
+    // ✅ Fonction pour gérer la sélection d'un itinéraire
+    const handleItinerarySelect = (itineraryId: number) => {
+      setSelectedItinerary(itineraryId);
+      console.log(`Itinéraire sélectionné: ${itineraryId}`);
+      
+      // Fermer le modal après sélection
+      setTimeout(() => {
+        onClose();
+        resetForm();
+      }, 500);
+    };
+
+    // ✅ Calculer la région de la carte pour afficher tous les itinéraires
+    const getMapRegion = () => {
+      const allCoordinates = MOCK_PROPOSED_ITINERAIRES.flatMap(itinerary => itinerary.path);
+      const latitudes = allCoordinates.map(coord => coord[0]);
+      const longitudes = allCoordinates.map(coord => coord[1]);
+      
+      const minLat = Math.min(...latitudes);
+      const maxLat = Math.max(...latitudes);
+      const minLng = Math.min(...longitudes);
+      const maxLng = Math.max(...longitudes);
+      
+      return {
+        latitude: (maxLat + minLat) / 2,
+        longitude: (maxLng + minLng) / 2,
+        latitudeDelta: (maxLat - minLat) * 1.3,
+        longitudeDelta: (maxLng - minLng) * 1.3,
+      };
+    };
+
+    // ✅ Étape des résultats avec carte et sélection
+    if (showResults) {
+      return (
+        <Modal visible={visible} animationType="slide" transparent={false}>
+          <View style={styles.container}>
+            <ImageBackground
+              source={require("../assets/images/pexels-lum3n-44775-167684.jpeg")}
+              style={styles.backgroundImage}
+            >
+              <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+                <Ionicons name="close" size={28} color="#fff" />
+              </TouchableOpacity>
+            </ImageBackground>
+
+            <View style={styles.greenPart}>
+              <ScrollView showsVerticalScrollIndicator={false}>
+                <Text style={styles.questionText}>Voici vos itinéraires personnalisés !</Text>
+                
+                {/* Carte avec les 3 itinéraires */}
+                <View style={styles.mapContainer}>
+                  <MapView
+                    style={styles.resultsMap}
+                    initialRegion={getMapRegion()}
+                    scrollEnabled={true}
+                    zoomEnabled={true}
+                  >
+                    {/* Tracés des itinéraires */}
+                    {MOCK_PROPOSED_ITINERAIRES.map((itinerary) => (
+                      <Polyline
+                        key={`route-${itinerary.id}`}
+                        coordinates={itinerary.path.map(point => ({
+                          latitude: point[0],
+                          longitude: point[1]
+                        }))}
+                        strokeColor={itinerary.color}
+                        strokeWidth={selectedItinerary === itinerary.id ? 6 : 4}
+                      />
+                    ))}
+                    
+                    {/* Markers de départ et arrivée */}
+                    {MOCK_PROPOSED_ITINERAIRES.map((itinerary) => (
+                      <React.Fragment key={`markers-${itinerary.id}`}>
+                        {/* Départ */}
+                        <Marker
+                          coordinate={{
+                            latitude: itinerary.path[0][0],
+                            longitude: itinerary.path[0][1]
+                          }}
+                          title={`Départ ${itinerary.title}`}
+                        >
+                          <View style={[styles.startMarker, { borderColor: itinerary.color }]}
+                          >
+                            <Ionicons name="play" size={16} color={itinerary.color} />
+                          </View>
+                        </Marker>
+                        
+                        {/* Arrivée */}
+                        <Marker
+                          coordinate={{
+                            latitude: itinerary.path[itinerary.path.length - 1][0],
+                            longitude: itinerary.path[itinerary.path.length - 1][1]
+                          }}
+                          title={`Arrivée ${itinerary.title}`}
+                        >
+                          <View style={[styles.endMarker, { borderColor: itinerary.color }]}
+                          >
+                            <Ionicons name="flag" size={16} color={itinerary.color} />
+                          </View>
+                        </Marker>
+                      </React.Fragment>
+                    ))}
+                  </MapView>
+                </View>
+
+                {/* Liste des itinéraires sélectionnables */}
+                <View style={styles.itinerariesList}>
+                  {MOCK_PROPOSED_ITINERAIRES.map((itinerary) => (
+                    <TouchableOpacity
+                      key={itinerary.id}
+                      style={[
+                        styles.itineraryCard,
+                        selectedItinerary === itinerary.id && styles.selectedItineraryCard,
+                        { borderLeftColor: itinerary.color }
+                      ]}
+                      onPress={() => handleItinerarySelect(itinerary.id)}
+                    >
+                      <View style={styles.itineraryHeader}>
+                        <Text style={styles.itineraryTitle}>{itinerary.title}</Text>
+                        <View style={styles.itineraryBadge}>
+                          <View style={[styles.colorDot, { backgroundColor: itinerary.color }]} />
+                        </View>
+                      </View>
+                      
+                      <Text style={styles.itineraryDescription}>{itinerary.description}</Text>
+                      
+                      <View style={styles.itineraryStats}>
+                        <View style={styles.statItem}>
+                          <Ionicons name="time" size={16} color="#666" />
+                          <Text style={styles.statText}>{itinerary.duration}</Text>
+                        </View>
+                        <View style={styles.statItem}>
+                          <Ionicons name="car" size={16} color="#666" />
+                          <Text style={styles.statText}>{itinerary.distance}</Text>
+                        </View>
+                        <View style={styles.statItem}>
+                          <Ionicons name="wallet" size={16} color="#666" />
+                          <Text style={styles.statText}>{itinerary.budget}</Text>
+                        </View>
+                      </View>
+                      
+                      <View style={styles.highlightsContainer}>
+                        <Text style={styles.highlightsLabel}>Points forts :</Text>
+                        <Text style={styles.highlightsText}>
+                          {itinerary.highlights.join(" • ")}
+                        </Text>
+                      </View>
+                      
+                      {selectedItinerary === itinerary.id && (
+                        <View style={styles.selectedIndicator}>
+                          <Ionicons name="checkmark-circle" size={20} color={itinerary.color} />
+                          <Text style={[styles.selectedText, { color: itinerary.color }]}
+                          >
+                            Sélectionné
+                          </Text>
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                
+                <View style={styles.resultsFooter}>
+                  <TouchableOpacity 
+                    style={styles.backToFormButton}
+                    onPress={() => setShowResults(false)}
+                  >
+                    <Ionicons name="arrow-back" size={20} color="#34573E" />
+                    <Text style={styles.backToFormText}>Modifier mes critères</Text>
+                  </TouchableOpacity>
+                </View>
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+      );
+    }
 
     // 1. Question sur le type de date
     if (step === 0) {
         return (
             <Modal visible={visible} animationType="slide" transparent={false}>
-                <SafeAreaView style={styles.container}>
+                <View style={styles.container}>
                     <ImageBackground
                         source={require('../assets/images/pexels-lum3n-44775-167684.jpeg')}
                         style={styles.backgroundImage}
@@ -183,7 +422,7 @@ export default function CreateTripModal({ visible, onClose }: { visible: boolean
                             <View style={[styles.progressBar, { width: "6.5%" }]} />
                         </View>
                     </View>
-                </SafeAreaView>
+                </View>
             </Modal>
         );
     }
@@ -192,7 +431,7 @@ export default function CreateTripModal({ visible, onClose }: { visible: boolean
     if (step === 1 && dateType === "precise") {
         return (
             <Modal visible={visible} animationType="slide" transparent={false}>
-                <SafeAreaView style={styles.container}>
+                <View style={styles.container}>
                     <ImageBackground
                         source={require('../assets/images/pexels-lum3n-44775-167684.jpeg')}
                         style={styles.backgroundImage}
@@ -240,16 +479,14 @@ export default function CreateTripModal({ visible, onClose }: { visible: boolean
                                     {
                                         opacity:
                                             range.start &&
-                                                range.end &&
-                                                (dateType === "precise" || (dateType === "approx" && approxDays))
+                                                range.end
                                                 ? 1
                                                 : 0.5
                                     }
                                 ]}
                                 disabled={
                                     !range.start ||
-                                    !range.end ||
-                                    (dateType === "approx" && !approxDays)
+                                    !range.end
                                 }
                             >
                                 <Ionicons name="arrow-forward" size={24} color="#fff" />
@@ -259,7 +496,7 @@ export default function CreateTripModal({ visible, onClose }: { visible: boolean
                             <View style={[styles.progressBar, { width: "13%" }]} />
                         </View>
                     </View>
-                </SafeAreaView>
+                </View>
             </Modal>
         );
     }
@@ -268,7 +505,7 @@ export default function CreateTripModal({ visible, onClose }: { visible: boolean
     if (step === 1 && dateType === "approx" && approxStep === 1) {
         return (
             <Modal visible={visible} animationType="slide" transparent={false}>
-                <SafeAreaView style={styles.container}>
+                <View style={styles.container}>
                     <ImageBackground
                         source={require('../assets/images/pexels-lum3n-44775-167684.jpeg')}
                         style={styles.backgroundImage}
@@ -320,7 +557,7 @@ export default function CreateTripModal({ visible, onClose }: { visible: boolean
                             <View style={[styles.progressBar, { width: "10%" }]} />
                         </View>
                     </View>
-                </SafeAreaView>
+                </View>
             </Modal>
         );
     }
@@ -332,7 +569,7 @@ export default function CreateTripModal({ visible, onClose }: { visible: boolean
             : 0;
         return (
             <Modal visible={visible} animationType="slide" transparent={false}>
-                <SafeAreaView style={styles.container}>
+                <View style={styles.container}>
                     <ImageBackground
                         source={require('../assets/images/pexels-lum3n-44775-167684.jpeg')}
                         style={styles.backgroundImage}
@@ -385,7 +622,7 @@ export default function CreateTripModal({ visible, onClose }: { visible: boolean
                             <View style={[styles.progressBar, { width: "13%" }]} />
                         </View>
                     </View>
-                </SafeAreaView>
+                </View>
             </Modal>
         );
     }
@@ -396,7 +633,7 @@ export default function CreateTripModal({ visible, onClose }: { visible: boolean
     if (step === 2) {
         return (
             <Modal visible={visible} animationType="slide" transparent={false}>
-                <SafeAreaView style={styles.container}>
+                <View style={styles.container}>
                     <ImageBackground
                         source={require('../assets/images/pexels-lum3n-44775-167684.jpeg')}
                         style={styles.backgroundImage}
@@ -459,7 +696,7 @@ export default function CreateTripModal({ visible, onClose }: { visible: boolean
                             <View style={[styles.progressBar, { width: "20%" }]} />
                         </View>
                     </View>
-                </SafeAreaView>
+                </View>
             </Modal>
         );
     }
@@ -467,7 +704,7 @@ export default function CreateTripModal({ visible, onClose }: { visible: boolean
     if (step === 3) {
         return (
             <Modal visible={visible} animationType="slide" transparent={false}>
-                <SafeAreaView style={styles.container}>
+                <View style={styles.container}>
                     <ImageBackground
                         source={require('../assets/images/pexels-lum3n-44775-167684.jpeg')}
                         style={styles.backgroundImage}
@@ -515,7 +752,7 @@ export default function CreateTripModal({ visible, onClose }: { visible: boolean
                             <View style={[styles.progressBar, { width: "26%" }]} />
                         </View>
                     </View>
-                </SafeAreaView>
+                </View>
             </Modal>
         );
     }
@@ -523,7 +760,7 @@ export default function CreateTripModal({ visible, onClose }: { visible: boolean
     if (showPartner === "info") {
         return (
             <Modal visible={visible} animationType="slide" transparent={false}>
-                <SafeAreaView style={styles.container}>
+                <View style={styles.container}>
                     <ImageBackground
                         source={require('../assets/images/pexels-lum3n-44775-167684.jpeg')}
                         style={styles.backgroundImage}
@@ -557,7 +794,7 @@ export default function CreateTripModal({ visible, onClose }: { visible: boolean
                             <View style={[styles.progressBar, { width: "30%" }]} />
                         </View>
                     </View>
-                </SafeAreaView>
+                </View>
             </Modal>
         );
     }
@@ -565,7 +802,7 @@ export default function CreateTripModal({ visible, onClose }: { visible: boolean
     if (showPartner === "rent") {
         return (
             <Modal visible={visible} animationType="slide" transparent={false}>
-                <SafeAreaView style={styles.container}>
+                <View style={styles.container}>
                     <ImageBackground
                         source={require('../assets/images/pexels-lum3n-44775-167684.jpeg')}
                         style={styles.backgroundImage}
@@ -599,7 +836,7 @@ export default function CreateTripModal({ visible, onClose }: { visible: boolean
                             <View style={[styles.progressBar, { width: "30%" }]} />
                         </View>
                     </View>
-                </SafeAreaView>
+                </View>
             </Modal>
         );
     }
@@ -623,7 +860,7 @@ export default function CreateTripModal({ visible, onClose }: { visible: boolean
 
         return (
             <Modal visible={visible} animationType="slide" transparent={false}>
-                <SafeAreaView style={styles.container}>
+                <View style={styles.container}>
                     <ImageBackground
                         source={require('../assets/images/pexels-lum3n-44775-167684.jpeg')}
                         style={styles.backgroundImage}
@@ -670,7 +907,7 @@ export default function CreateTripModal({ visible, onClose }: { visible: boolean
                             <View style={[styles.progressBar, { width: "33%" }]} />
                         </View>
                     </View>
-                </SafeAreaView>
+                </View>
             </Modal>
         );
     }
@@ -685,7 +922,7 @@ export default function CreateTripModal({ visible, onClose }: { visible: boolean
 
         return (
             <Modal visible={visible} animationType="slide" transparent={false}>
-                <SafeAreaView style={styles.container}>
+                <View style={styles.container}>
                     <ImageBackground
                         source={require('../assets/images/pexels-lum3n-44775-167684.jpeg')}
                         style={styles.backgroundImage}
@@ -732,7 +969,7 @@ export default function CreateTripModal({ visible, onClose }: { visible: boolean
                             <View style={[styles.progressBar, { width: "39%" }]} />
                         </View>
                     </View>
-                </SafeAreaView>
+                </View>
             </Modal>
         );
     }
@@ -747,7 +984,7 @@ export default function CreateTripModal({ visible, onClose }: { visible: boolean
 
         return (
             <Modal visible={visible} animationType="slide" transparent={false}>
-                <SafeAreaView style={styles.container}>
+                <View style={styles.container}>
                     <ImageBackground
                         source={require('../assets/images/pexels-lum3n-44775-167684.jpeg')}
                         style={styles.backgroundImage}
@@ -794,7 +1031,7 @@ export default function CreateTripModal({ visible, onClose }: { visible: boolean
                             <View style={[styles.progressBar, { width: "45%" }]} />
                         </View>
                     </View>
-                </SafeAreaView>
+                </View>
             </Modal>
         );
     }
@@ -818,7 +1055,7 @@ export default function CreateTripModal({ visible, onClose }: { visible: boolean
 
         return (
             <Modal visible={visible} animationType="slide" transparent={false}>
-                <SafeAreaView style={styles.container}>
+                <View style={styles.container}>
                     <ImageBackground
                         source={require('../assets/images/pexels-lum3n-44775-167684.jpeg')}
                         style={styles.backgroundImage}
@@ -865,7 +1102,7 @@ export default function CreateTripModal({ visible, onClose }: { visible: boolean
                             <View style={[styles.progressBar, { width: "50%" }]} />
                         </View>
                     </View>
-                </SafeAreaView>
+                </View>
             </Modal>
         );
     }
@@ -887,7 +1124,7 @@ export default function CreateTripModal({ visible, onClose }: { visible: boolean
         };
         return (
             <Modal visible={visible} animationType="slide" transparent={false}>
-                <SafeAreaView style={styles.container}>
+                <View style={styles.container}>
                     <ImageBackground
                         source={require('../assets/images/pexels-lum3n-44775-167684.jpeg')}
                         style={styles.backgroundImage}
@@ -934,7 +1171,7 @@ export default function CreateTripModal({ visible, onClose }: { visible: boolean
                             <View style={[styles.progressBar, { width: "56%" }]} />
                         </View>
                     </View>
-                </SafeAreaView>
+                </View>
             </Modal>
         );
     }
@@ -948,7 +1185,7 @@ export default function CreateTripModal({ visible, onClose }: { visible: boolean
         ];
         return (
             <Modal visible={visible} animationType="slide" transparent={false}>
-                <SafeAreaView style={styles.container}>
+                <View style={styles.container}>
                     <ImageBackground
                         source={require('../assets/images/pexels-lum3n-44775-167684.jpeg')}
                         style={styles.backgroundImage}
@@ -995,7 +1232,7 @@ export default function CreateTripModal({ visible, onClose }: { visible: boolean
                             <View style={[styles.progressBar, { width: "62%" }]} />
                         </View>
                     </View>
-                </SafeAreaView>
+                </View>
             </Modal>
         );
     }
@@ -1016,7 +1253,7 @@ export default function CreateTripModal({ visible, onClose }: { visible: boolean
         };
         return (
             <Modal visible={visible} animationType="slide" transparent={false}>
-                <SafeAreaView style={styles.container}>
+                <View style={styles.container}>
                     <ImageBackground
                         source={require('../assets/images/pexels-lum3n-44775-167684.jpeg')}
                         style={styles.backgroundImage}
@@ -1063,7 +1300,7 @@ export default function CreateTripModal({ visible, onClose }: { visible: boolean
                             <View style={[styles.progressBar, { width: "69%" }]} />
                         </View>
                     </View>
-                </SafeAreaView>
+                </View>
             </Modal>
         );
     }
@@ -1087,7 +1324,7 @@ export default function CreateTripModal({ visible, onClose }: { visible: boolean
         };
         return (
             <Modal visible={visible} animationType="slide" transparent={false}>
-                <SafeAreaView style={styles.container}>
+                <View style={styles.container}>
                     <ImageBackground
                         source={require('../assets/images/pexels-lum3n-44775-167684.jpeg')}
                         style={styles.backgroundImage}
@@ -1140,7 +1377,7 @@ export default function CreateTripModal({ visible, onClose }: { visible: boolean
                             <View style={[styles.progressBar, { width: `${((step + 1) / 16) * 100}%` }]} />
                         </View>
                     </View>
-                </SafeAreaView>
+                </View>
             </Modal>
         );
     }
@@ -1163,7 +1400,7 @@ export default function CreateTripModal({ visible, onClose }: { visible: boolean
         };
         return (
             <Modal visible={visible} animationType="slide" transparent={false}>
-                <SafeAreaView style={styles.container}>
+                <View style={styles.container}>
                     <ImageBackground
                         source={require('../assets/images/pexels-lum3n-44775-167684.jpeg')}
                         style={styles.backgroundImage}
@@ -1210,7 +1447,7 @@ export default function CreateTripModal({ visible, onClose }: { visible: boolean
                             <View style={[styles.progressBar, { width: "82%" }]} />
                         </View>
                     </View>
-                </SafeAreaView>
+                </View>
             </Modal>
         );
     }
@@ -1224,7 +1461,7 @@ export default function CreateTripModal({ visible, onClose }: { visible: boolean
         ];
         return (
             <Modal visible={visible} animationType="slide" transparent={false}>
-                <SafeAreaView style={styles.container}>
+                <View style={styles.container}>
                     <ImageBackground
                         source={require('../assets/images/pexels-lum3n-44775-167684.jpeg')}
                         style={styles.backgroundImage}
@@ -1271,7 +1508,7 @@ export default function CreateTripModal({ visible, onClose }: { visible: boolean
                             <View style={[styles.progressBar, { width: "92%" }]} />
                         </View>
                     </View>
-                </SafeAreaView>
+                </View>
             </Modal>
         );
     }
@@ -1280,8 +1517,8 @@ export default function CreateTripModal({ visible, onClose }: { visible: boolean
     if (step === 14) {
         const options = [
             "Animaux",
-            "Kids friendly",
-            "Pas d’autoroute",
+            "Kids friendly", 
+            "Pas d'autoroute",
             "PMR"
         ];
         const toggleConstraint = (option: string) => {
@@ -1293,7 +1530,7 @@ export default function CreateTripModal({ visible, onClose }: { visible: boolean
         };
         return (
             <Modal visible={visible} animationType="slide" transparent={false}>
-                <SafeAreaView style={styles.container}>
+                <View style={styles.container}>
                     <ImageBackground
                         source={require('../assets/images/pexels-lum3n-44775-167684.jpeg')}
                         style={styles.backgroundImage}
@@ -1304,54 +1541,50 @@ export default function CreateTripModal({ visible, onClose }: { visible: boolean
                         </TouchableOpacity>
                     </ImageBackground>
                     <View style={styles.greenPart}>
+                        <View style={styles.progressBarContainer}>
+                            <View style={[styles.progressBar, { width: "100%" }]} />
+                        </View>
+
                         <View style={styles.questionContainer}>
-                            <Text style={styles.questionText}>As-tu des contraintes ou besoins particuliers ?</Text>
-                            {options.map(option => (
+                            <Text style={styles.questionText}>Des contraintes particulières ?</Text>
+                            {options.map((option) => (
                                 <TouchableOpacity
                                     key={option}
                                     style={[
                                         styles.choiceButton,
-                                        constraints.includes(option) && styles.choiceButtonSelected
+                                        constraints.includes(option) && styles.choiceButtonSelected,
                                     ]}
                                     onPress={() => toggleConstraint(option)}
                                 >
-                                    <Text style={[
-                                        styles.choiceButtonText,
-                                        constraints.includes(option) && styles.choiceButtonTextSelected
-                                    ]}>
+                                    <Text
+                                        style={[
+                                            styles.choiceButtonText,
+                                            constraints.includes(option) && styles.choiceButtonTextSelected,
+                                        ]}
+                                    >
                                         {option}
                                     </Text>
                                 </TouchableOpacity>
                             ))}
                         </View>
+
                         <View style={styles.navContainer}>
-                            <TouchableOpacity onPress={() => setStep(step - 1)} style={styles.navButton}>
-                                <Ionicons name="arrow-back" size={24} color="#fff" />
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                onPress={() => {
-                                    // Ici tu peux gérer la fin du questionnaire
-                                    logAnswers();
-                                    onClose();
-                                    resetForm();
-                            }}
-                            style={[styles.navButton, { opacity: 1 }]}
-                        >
-                            <Ionicons name="checkmark" size={24} color="#fff" />
-                        </TouchableOpacity>
-                        </View>
-                        <View style={styles.progressBarContainer}>
-                            <View style={[styles.progressBar, { width: "100%" }]} />
+                          <TouchableOpacity style={styles.navButton} onPress={() => setStep(13)}>
+                            <Ionicons name="arrow-back" size={20} color="#fff" />
+                          </TouchableOpacity>
+                          <TouchableOpacity style={styles.navButton} onPress={logAnswers}>
+                            <Ionicons name="checkmark" size={20} color="#fff" />
+                          </TouchableOpacity>
                         </View>
                     </View>
-                </SafeAreaView>
+                </View>
             </Modal>
         );
     }
 
     return (
         <Modal visible={visible} animationType="slide" transparent={false}>
-            <SafeAreaView style={styles.container}>
+            <View style={styles.container}>
                 <ImageBackground
                     source={require('../assets/images/pexels-lum3n-44775-167684.jpeg')}
                     style={styles.backgroundImage}
@@ -1362,23 +1595,12 @@ export default function CreateTripModal({ visible, onClose }: { visible: boolean
                     </TouchableOpacity>
                 </ImageBackground>
                 <View style={styles.greenPart}>
-                    <View style={styles.questionContainer}>
-                        <Text style={styles.questionText}>Autres questions ici…</Text>
-                        {/* ... */}
-                    </View>
-                    <View style={styles.navContainer}>
-                        <TouchableOpacity onPress={() => setStep(step - 1)} style={styles.navButton}>
-                            <Ionicons name="arrow-back" size={24} color="#fff" />
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => { /* ... */ }} style={styles.navButton}>
-                            <Ionicons name="arrow-forward" size={24} color="#fff" />
-                        </TouchableOpacity>
-                    </View>
-                    <View style={styles.progressBarContainer}>
-                        <View style={[styles.progressBar, { width: "60%" }]} />
-                    </View>
+                    <Text style={styles.questionText}>Questionnaire terminé !</Text>
+                    <TouchableOpacity style={styles.choiceButton} onPress={onClose}>
+                        <Text style={styles.choiceButtonText}>Fermer</Text>
+                    </TouchableOpacity>
                 </View>
-            </SafeAreaView>
+            </View>
         </Modal>
     );
 }
@@ -1473,5 +1695,148 @@ const styles = StyleSheet.create({
         height: 8,
         backgroundColor: "#FF9900",
         borderRadius: 4,
+    },
+    
+    // ✅ Nouveaux styles pour l'étape résultats
+    mapContainer: {
+      height: 250,
+      borderRadius: 15,
+      overflow: 'hidden',
+      marginBottom: 20,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.2,
+      shadowRadius: 4,
+      elevation: 5,
+    },
+    resultsMap: {
+      flex: 1,
+    },
+    startMarker: {
+      backgroundColor: '#fff',
+      borderRadius: 15,
+      padding: 6,
+      borderWidth: 2,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.3,
+      shadowRadius: 3,
+      elevation: 5,
+    },
+    endMarker: {
+      backgroundColor: '#fff',
+      borderRadius: 15,
+      padding: 6,
+      borderWidth: 2,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.3,
+      shadowRadius: 3,
+      elevation: 5,
+    },
+    itinerariesList: {
+      gap: 15,
+      marginBottom: 20,
+    },
+    itineraryCard: {
+      backgroundColor: '#fff',
+      borderRadius: 15,
+      padding: 16,
+      borderLeftWidth: 4,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 3,
+    },
+    selectedItineraryCard: {
+      backgroundColor: '#f8fff8',
+      shadowOpacity: 0.2,
+      elevation: 6,
+    },
+    itineraryHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 8,
+    },
+    itineraryTitle: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      color: '#34573E',
+      flex: 1,
+    },
+    itineraryBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    colorDot: {
+      width: 12,
+      height: 12,
+      borderRadius: 6,
+    },
+    itineraryDescription: {
+      fontSize: 14,
+      color: '#666',
+      marginBottom: 12,
+      lineHeight: 20,
+    },
+    itineraryStats: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: 12,
+    },
+    statItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    statText: {
+      fontSize: 12,
+      color: '#666',
+      fontWeight: 'bold',
+    },
+    highlightsContainer: {
+      marginBottom: 8,
+    },
+    highlightsLabel: {
+      fontSize: 12,
+      fontWeight: 'bold',
+      color: '#34573E',
+      marginBottom: 4,
+    },
+    highlightsText: {
+      fontSize: 12,
+      color: '#666',
+      lineHeight: 16,
+    },
+    selectedIndicator: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 8,
+      gap: 6,
+    },
+    selectedText: {
+      fontSize: 14,
+      fontWeight: 'bold',
+    },
+    resultsFooter: {
+      alignItems: 'center',
+      marginTop: 10,
+    },
+    backToFormButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: '#fff',
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      borderRadius: 20,
+      gap: 6,
+    },
+    backToFormText: {
+      color: '#34573E',
+      fontWeight: 'bold',
+      fontSize: 14,
     },
 });
