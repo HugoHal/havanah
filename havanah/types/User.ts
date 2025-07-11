@@ -17,15 +17,15 @@ export interface ItineraireUser {
   id: string;
   nom: string;
   description: string;
-  duree: string;
-  distance: string;
+  duree: number;      // en jours
+  distance: number;   // en km
   spots: string[];
   note: number;
   nbVues: number;
   isPublic: boolean;
   createdAt: Date;
   image?: string;
-  co2Economise: number; // ✅ Nouveau: CO2 économisé en kg
+  co2Economise: number;
 }
 
 export interface SpotVisite {

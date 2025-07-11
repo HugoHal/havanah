@@ -3,19 +3,17 @@ export interface Itineraire {
   id: string;
   nom: string;
   description: string;
-  duree: string;
-  distance: string;
-  spots: string[]; // Liste des noms de spots
+  duree: number;      // en jours
+  distance: number;   // en km
+  spots: string[];
   note: number;
   nbVues: number;
   createdAt: Date;
   image?: string;
-  co2Economise: number; // ✅ Nouveau: CO2 économisé en kg
-  
-  // Nouvelles propriétés pour les trajets détaillés
-  waypoints?: Waypoint[]; // Points de passage principaux (spots)
-  detailedRoute?: DetailedRoute; // Route précise avec navigation
-  estimatedTime?: number; // Temps estimé en minutes
+  co2Economise: number;
+  waypoints?: Waypoint[];
+  detailedRoute?: DetailedRoute;
+  estimatedTime?: number;
   roadType?: 'autoroute' | 'nationale' | 'departementale' | 'mixte';
 }
 

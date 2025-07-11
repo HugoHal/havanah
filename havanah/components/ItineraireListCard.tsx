@@ -44,11 +44,11 @@ export default function ItineraireListCard({ itineraire, showCompleted = false }
       <View style={styles.infos}>
         <View style={styles.infoItem}>
           <Ionicons name="time" size={16} color="#34573E" />
-          <Text style={styles.infoText}>{itineraire.duree}</Text>
+          <Text style={styles.infoText}>{itineraire.duree} jours</Text>
         </View>
         <View style={styles.infoItem}>
           <Ionicons name="car" size={16} color="#34573E" />
-          <Text style={styles.infoText}>{itineraire.distance}</Text>
+          <Text style={styles.infoText}>{itineraire.distance} km</Text>
         </View>
         <View style={styles.infoItem}>
           <Ionicons name="star" size={16} color="#FF9900" />

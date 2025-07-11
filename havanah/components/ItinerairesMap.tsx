@@ -139,11 +139,11 @@ export default function ItinerairesMap({ itineraires, onItineraireSelect }: Itin
                     <View style={styles.calloutInfos}>
                       <View style={styles.calloutInfo}>
                         <Ionicons name="time" size={14} color="#666" />
-                        <Text style={styles.calloutInfoText}>{itineraire.duree}</Text>
+                        <Text style={styles.calloutInfoText}>{itineraire.duree} jours</Text>
                       </View>
                       <View style={styles.calloutInfo}>
                         <Ionicons name="car" size={14} color="#666" />
-                        <Text style={styles.calloutInfoText}>{itineraire.distance}</Text>
+                        <Text style={styles.calloutInfoText}>{itineraire.distance} km</Text>
                       </View>
                     </View>
                     <TouchableOpacity style={styles.viewButton}>

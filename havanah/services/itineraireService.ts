@@ -6,13 +6,13 @@ const MOCK_ITINERAIRES: Record<'court' | 'moyen' | 'long' | 'aventure' | 'decouv
     id: "1",
     nom: "Weekend à Montpellier",
     description: "Un court séjour pour découvrir Montpellier et ses environs. Parfait pour s'initier au van life !",
-    duree: "2-3 jours",
-    distance: "50 km",
+    duree: 3,
+    distance: 50,
     spots: ["Montpellier centre", "Palavas-les-Flots", "Carnon"],
     note: 4.7,
     nbVues: 1250,
     createdAt: new Date('2024-01-15'),
-    co2Economise: 45, // ✅ Ajouté
+    co2Economise: 45,
     waypoints: [
       {
         id: "w1",
@@ -73,13 +73,13 @@ const MOCK_ITINERAIRES: Record<'court' | 'moyen' | 'long' | 'aventure' | 'decouv
     id: "2",
     nom: "Tour de la Camargue",
     description: "Découverte complète de la Camargue, ses flamants roses, ses chevaux et ses traditions. Un voyage authentique de 7 à 10 jours.",
-    duree: "7-10 jours", 
-    distance: "420 km",
+    duree: 8, // moyenne de 7-10 jours
+    distance: 420,
     spots: ["Arles", "Saintes-Maries-de-la-Mer", "Aigues-Mortes", "Port-Camargue"],
     note: 4.9,
     nbVues: 892,
     createdAt: new Date('2024-02-10'),
-    co2Economise: 180, // ✅ Ajouté
+    co2Economise: 180,
     waypoints: [
       {
         id: "w4",
@@ -112,16 +112,16 @@ const MOCK_ITINERAIRES: Record<'court' | 'moyen' | 'long' | 'aventure' | 'decouv
   },
 
   long: {
-    id: "3", 
+    id: "3",
     nom: "Grand Tour du Sud",
     description: "Le grand classique ! De Montpellier à Nice en passant par tous les incontournables : Camargue, Luberon, Côte d'Azur. 3 semaines de pur bonheur !",
-    duree: "3-4 semaines",
-    distance: "1200 km", 
+    duree: 21, // 3 semaines
+    distance: 1200,
     spots: ["Montpellier", "Avignon", "Luberon", "Cassis", "Nice", "Cannes"],
     note: 4.8,
     nbVues: 2341,
     createdAt: new Date('2024-03-05'),
-    co2Economise: 520, // ✅ Ajouté
+    co2Economise: 520,
     waypoints: [
       {
         id: "w7",
@@ -155,15 +155,15 @@ const MOCK_ITINERAIRES: Record<'court' | 'moyen' | 'long' | 'aventure' | 'decouv
 
   aventure: {
     id: "4",
-    nom: "Pyrénées Sauvages", 
+    nom: "Pyrénées Sauvages",
     description: "Pour les aventuriers ! Routes de montagne, cols spectaculaires et spots isolés dans les Pyrénées.",
-    duree: "10-15 jours",
-    distance: "800 km",
+    duree: 12, // moyenne de 10-15 jours
+    distance: 800,
     spots: ["Toulouse", "Lourdes", "Cauterets", "Pic du Midi"],
     note: 4.6,
     nbVues: 456,
     createdAt: new Date('2024-01-20'),
-    co2Economise: 340, // ✅ Ajouté
+    co2Economise: 340,
     waypoints: [
       {
         id: "w10",
@@ -190,13 +190,13 @@ const MOCK_ITINERAIRES: Record<'court' | 'moyen' | 'long' | 'aventure' | 'decouv
     id: "5",
     nom: "Châteaux de la Loire",
     description: "Circuit culturel à travers les plus beaux châteaux de la Loire. Histoire et raffinement au programme !",
-    duree: "5-7 jours", 
-    distance: "350 km",
+    duree: 6, // moyenne de 5-7 jours
+    distance: 350,
     spots: ["Orléans", "Blois", "Chambord", "Chenonceau", "Tours"],
     note: 4.4,
     nbVues: 678,
     createdAt: new Date('2024-04-12'),
-    co2Economise: 150, // ✅ Ajouté
+    co2Economise: 150,
     waypoints: [
       {
         id: "w12",
@@ -247,3 +247,16 @@ export const getItinerairesByType = (type: 'balnéaire' | 'montagne' | 'culturel
     typeMapping[type]?.includes(itineraire.id)
   );
 };
+
+import { supabase } from '../supabaseClient';
+
+async function testSupabaseConnection() {
+  const { data, error } = await supabase.from('users').select().limit(1);
+  if (error) {
+    console.error('Supabase connection error:', error.message);
+  } else {
+    console.log('Supabase connection OK, first user:', data);
+  }
+}
+
+testSupabaseConnection();
