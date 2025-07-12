@@ -13,11 +13,13 @@ import {
 import { Stack } from "expo-router";
 import { User, ItineraireUser, SpotVisite } from '../types/User';
 import { userService } from '../services/userService';
+import { getUserItinerairesWithSpots } from '../services/itineraireService';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import ItineraireListCard from '../components/ItineraireListCard';
 import SpotVisiteCard from '../components/SpotVisiteCard';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../hooks/useAuth';
+import { supabase } from '../supabaseClient';
 
 type TabType = 'stats' | 'itineraires' | 'faits' | 'spots';
 
@@ -29,17 +31,25 @@ export default function ProfilScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('stats');
+  const [stats, setStats] = useState({
+    nbItinerairesCreees: 0,
+    nbItinerairesFaits: 0,
+    nbSpotsFaits: 0,
+    kmParcourus: 0,
+  });
   const { logout } = useAuth();
 
   const loadData = async () => {
     try {
-      const [userData, itinerairesData, faitsData, spotsData] = await Promise.all([
-        userService.getCurrentUser(),
-        userService.getUserItineraires(),
-        userService.getItinerairesFaits(),
-        userService.getSpotsVisites(),
-      ]);
-      
+      const userData = await userService.getCurrentUser();
+      let itinerairesData: ItineraireUser[] = [];
+      let faitsData: ItineraireUser[] = [];
+      let spotsData: SpotVisite[] = [];
+      if (userData?.id) {
+        itinerairesData = await getUserItinerairesWithSpots(userData.id);
+        faitsData = await userService.getItinerairesFaits();
+        spotsData = await userService.getSpotsVisites();
+      }
       setUser(userData);
       setUserItineraires(itinerairesData);
       setItinerairesFaits(faitsData);
@@ -112,6 +122,47 @@ export default function ProfilScreen() {
     loadData();
   }, []);
 
+  useEffect(() => {
+    async function fetchStats() {
+      if (user?.id) {
+        // Itinéraires créés
+        const { count: nbItinerairesCreees } = await supabase
+          .from('itineraires')
+          .select('*', { count: 'exact', head: true })
+          .eq('creator_id', user.id);
+
+        // Itinéraires faits
+        const { count: nbItinerairesFaits } = await supabase
+          .from('itineraire_visites')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id);
+
+        // Spots visités
+        const { count: nbSpotsFaits } = await supabase
+          .from('spot_visites')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id);
+
+        // Km parcourus (sum des distances des itinéraires faits)
+        const { data: kmData, error: kmError } = await supabase
+          .rpc('sum_distance_for_user', { user_id_input: user.id });
+
+        const { data: totalSpotsData } = await supabase
+          .rpc('total_spots_visited', { user_id_input: user.id });
+
+        const totalSpots = totalSpotsData?.[0]?.total ?? 0;
+
+        setStats({
+          nbItinerairesCreees: nbItinerairesCreees ?? 0,
+          nbItinerairesFaits: nbItinerairesFaits ?? 0,
+          nbSpotsFaits: totalSpots,
+          kmParcourus: kmData?.[0]?.sum ?? 0,
+        });
+      }
+    }
+    fetchStats();
+  }, [user?.id]);
+
   if (loading || !user) {
     return (
       <>
@@ -134,24 +185,24 @@ export default function ProfilScreen() {
       <View style={styles.statsGrid}>
         <TouchableOpacity style={styles.statCard} onPress={() => onStatPress('itineraires')}>
           <Ionicons name="create" size={24} color="#34573E" />
-          <Text style={styles.statNumber}>{user.statistiques.nbItinerairesCreees}</Text>
+          <Text style={styles.statNumber}>{stats.nbItinerairesCreees}</Text>
           <Text style={styles.statLabel}>Itinéraires créés</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.statCard} onPress={() => onStatPress('faits')}>
           <Ionicons name="checkmark-circle" size={24} color="#FF9900" />
-          <Text style={styles.statNumber}>{user.statistiques.nbItinerairesFaits}</Text>
+          <Text style={styles.statNumber}>{stats.nbItinerairesFaits}</Text>
           <Text style={styles.statLabel}>Itinéraires faits</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.statCard} onPress={() => onStatPress('spots')}>
           <Ionicons name="location" size={24} color="#82A189" />
-          <Text style={styles.statNumber}>{user.statistiques.nbSpotsFaits}</Text>
+          <Text style={styles.statNumber}>{stats.nbSpotsFaits}</Text>
           <Text style={styles.statLabel}>Spots visités</Text>
         </TouchableOpacity>
-        <View style={styles.statCard}>
-          <Ionicons name="car" size={24} color="#E7D4BB" />
-          <Text style={styles.statNumber}>{user.statistiques.kmParcourus.toLocaleString()}</Text>
+        <TouchableOpacity style={styles.statCard}>
+          <Ionicons name="walk" size={24} color="#007AFF" />
+          <Text style={styles.statNumber}>{stats.kmParcourus.toLocaleString()}</Text>
           <Text style={styles.statLabel}>Km parcourus</Text>
-        </View>
+        </TouchableOpacity>
       </View>
       
       {user.bio && (
@@ -242,7 +293,9 @@ export default function ProfilScreen() {
             
             <Text style={styles.pseudo}>{user.pseudo}</Text>
             <Text style={styles.memberSince}>
-              Membre depuis {formatDate(user.dateCreation)}
+              Membre depuis {user.date_creation
+                ? formatDate(new Date(user.date_creation))
+                : 'Date inconnue'}
             </Text>
           </View>
 

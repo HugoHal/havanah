@@ -34,7 +34,11 @@ export default function ItineraireListCard({ itineraire, showCompleted = false }
             )}
           </View>
         </View>
-        <Text style={styles.date}>{formatDate(itineraire.createdAt)}</Text>
+        <Text style={styles.date}>
+          {itineraire.created_at
+            ? new Date(itineraire.created_at).toLocaleDateString('fr-FR')
+            : 'Date inconnue'}
+        </Text>
       </View>
       
       <Text style={styles.description} numberOfLines={2}>
@@ -64,8 +68,10 @@ export default function ItineraireListCard({ itineraire, showCompleted = false }
       <CO2Badge co2Economise={itineraire.co2Economise} size="small" style={styles.co2Badge} />
       
       <Text style={styles.spotsCount}>
-        {itineraire.spots.length} spots • {itineraire.spots.slice(0, 3).join(', ')}
-        {itineraire.spots.length > 3 && '...'}
+        {(itineraire.spots?.length ?? 0)} spots •
+        {itineraire.spots?.length > 0
+          ? ` ${itineraire.spots[0].nom}...`
+          : ''}
       </Text>
     </TouchableOpacity>
   );

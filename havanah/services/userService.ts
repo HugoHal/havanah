@@ -1,197 +1,72 @@
+import { supabase } from '../supabaseClient';
 import { User, ItineraireUser, SpotVisite } from '../types/User';
 
-// Données mock pour l'utilisateur connecté
-const CURRENT_USER: User = {
-  id: 'user-current',
-  pseudo: 'Hugo_Vanlife',
-  email: 'hugo@vanlife.com',
-  photoProfil: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAAAAAAAD...', // Base64 simulé
-  dateCreation: new Date('2023-08-15'),
-  bio: 'Passionné de van life depuis 2 ans ! J\'adore partager mes découvertes et rencontrer d\'autres voyageurs 🚐❤️',
-  statistiques: {
-    nbItinerairesCreees: 8,
-    nbItinerairesFaits: 23,
-    nbSpotsFaits: 67,
-    kmParcourus: 15420,
-  },
-};
-
-const USER_ITINERAIRES: ItineraireUser[] = [
-  {
-    id: 'user-itin-1',
-    nom: 'Mon Tour de Bretagne',
-    description: 'Itinéraire de 2 semaines à travers la Bretagne, de Saint-Malo à Quimper en passant par les plus beaux spots côtiers.',
-    duree: 14,
-    distance: 1200,
-    spots: ['Saint-Malo', 'Dinan', 'Cap Fréhel', 'Perros-Guirec', 'Morlaix', 'Brest', 'Quimper'],
-    note: 4.8,
-    nbVues: 156,
-    isPublic: true,
-    createdAt: new Date('2024-03-10'),
-    image: 'https://example.com/bretagne.jpg',
-    co2Economise: 480,
-  },
-  {
-    id: 'user-itin-2',
-    nom: 'Weekend Cévennes',
-    description: 'Court séjour dans les Cévennes pour découvrir le parc national et ses villages authentiques.',
-    duree: 3,
-    distance: 280,
-    spots: ['Florac', 'Gorges du Tarn', 'Mont Aigoual'],
-    note: 4.5,
-    nbVues: 89,
-    isPublic: false,
-    createdAt: new Date('2024-05-20'),
-    image: undefined,
-    co2Economise: undefined,
-  },
-  {
-    id: 'user-itin-3',
-    nom: 'Côte Atlantique Sud',
-    description: 'De Bordeaux à Biarritz en longeant la côte atlantique, parfait pour le surf et les couchers de soleil.',
-    duree: 10,
-    distance: 450,
-    spots: ['Arcachon', 'Mimizan', 'Hossegor', 'Capbreton', 'Biarritz'],
-    note: 4.9,
-    nbVues: 234,
-    isPublic: true,
-    createdAt: new Date('2024-01-08'),
-    image: undefined,
-    co2Economise: undefined,
-  },
-];
-
-const ITINERAIRES_FAITS: ItineraireUser[] = [
-  {
-    id: 'fait-1',
-    nom: 'Tour de la Camargue',
-    description: 'Découverte complète de la Camargue avec ses flamants roses et ses manades.',
-    duree: 10,
-    distance: 650,
-    spots: ['Saintes-Maries-de-la-Mer', 'Aigues-Mortes', 'Arles'],
-    note: 4.8,
-    nbVues: 1250,
-    isPublic: true,
-    createdAt: new Date('2024-04-15'),
-    image: undefined,
-    co2Economise: undefined,
-  },
-  {
-    id: 'fait-2',
-    nom: 'Alpes du Sud Express',
-    description: 'Circuit express dans les Alpes du Sud en une semaine.',
-    duree: 7,
-    distance: 800,
-    spots: ['Gap', 'Briançon', 'Serre-Chevalier', 'Embrun'],
-    note: 4.6,
-    nbVues: 567,
-    isPublic: true,
-    createdAt: new Date('2024-02-20'),
-    image: undefined,
-    co2Economise: undefined,
-  },
-];
-
-const SPOTS_VISITES: SpotVisite[] = [
-  {
-    spotId: '4',
-    nomSpot: 'Maison Hugo',
-    dateVisite: new Date('2024-05-30'),
-    note: 5,
-    commentaire: 'Mon chez moi ! Toujours un plaisir d\'accueillir des van lifers ❤️',
-  },
-  {
-    spotId: '7',
-    nomSpot: 'Maison Célia',
-    dateVisite: new Date('2024-05-29'),
-    note: 5,
-    commentaire: 'Le plus beau spot de Montpellier chez mon amoureuse 💕',
-  },
-  {
-    spotId: '1',
-    nomSpot: 'Camping Les Méditerranées',
-    dateVisite: new Date('2024-05-15'),
-    note: 4,
-    commentaire: 'Camping familial sympa, un peu cher mais bien situé.',
-  },
-  {
-    spotId: '6',
-    nomSpot: 'Camping Saintes-Maries-de-la-Mer',
-    dateVisite: new Date('2024-04-18'),
-    note: 4,
-    commentaire: 'Parfait pour observer les flamants roses !',
-  },
-];
-
 class UserService {
-  async getCurrentUser(): Promise<User> {
-    // Simulation d'un délai réseau
-    await new Promise(resolve => setTimeout(resolve, 500));
-    return CURRENT_USER;
+  async getCurrentUser(): Promise<User | null> {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .limit(1);
+    if (error) {
+      console.error('Erreur récupération user:', error.message);
+      return null;
+    }
+    // Adapter selon la structure de ta table
+    return data && data.length > 0 ? data[0] as User : null;
   }
 
   async getUserItineraires(): Promise<ItineraireUser[]> {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    return USER_ITINERAIRES.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    const { data, error } = await supabase
+      .from('itineraires')
+      .select('*')
+      .eq('creator_id', /* id utilisateur courant */ 'dfd2a3c6-34c2-4fa1-a6b3-b710d133d993');
+    if (error) {
+      console.error('Erreur récupération itinéraires:', error.message);
+      return [];
+    }
+    return data as ItineraireUser[];
   }
 
   async getItinerairesFaits(): Promise<ItineraireUser[]> {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    return ITINERAIRES_FAITS.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    // À adapter selon ta logique (table d'association ou champ spécifique)
+    return [];
   }
 
   async getSpotsVisites(): Promise<SpotVisite[]> {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    return SPOTS_VISITES.sort((a, b) => b.dateVisite.getTime() - a.dateVisite.getTime());
-  }
-
-  async updateProfile(updates: Partial<User>): Promise<User> {
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    // Mise à jour des données (en réel, ça irait au serveur)
-    Object.assign(CURRENT_USER, updates);
-    return CURRENT_USER;
-  }
-
-  async uploadProfilePhoto(photoBase64: string): Promise<string> {
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // En réel, on enverrait au serveur et on recevrait l'URL
-    CURRENT_USER.photoProfil = photoBase64;
-    return photoBase64;
+    const { data, error } = await supabase
+      .from('spot_visites')
+      .select('*')
+      .eq('user_id', /* id utilisateur courant */ 'dfd2a3c6-34c2-4fa1-a6b3-b710d133d993');
+    if (error) {
+      console.error('Erreur récupération spots visités:', error.message);
+      return [];
+    }
+    return data as SpotVisite[];
   }
 
   async getFavoriteItineraires(): Promise<ItineraireUser[]> {
-    return [
-      {
-        id: "fav1",
-        nom: "Roadtrip Bretagne",
-        description: "Un super roadtrip en Bretagne",
-        duree: 3,
-        distance: 400,
-        spots: ["Rennes", "Quimper", "Vannes"],
-        note: 4.7,
-        nbVues: 320,
-        isPublic: true,
-        createdAt: new Date('2024-04-01'),
-        image: "https://example.com/bretagne.jpg",
-        co2Economise: undefined,
-      },
-      {
-        id: "fav2",
-        nom: "Tour du Sud",
-        description: "Découverte du sud de la France",
-        duree: 5,
-        distance: 800,
-        spots: ["Marseille", "Nice", "Montpellier"],
-        note: 4.9,
-        nbVues: 410,
-        isPublic: false,
-        createdAt: new Date('2024-03-15'),
-        image: "https://example.com/sud.jpg",
-        co2Economise: undefined,
+    const { data, error } = await supabase
+      .from('favorites')
+      .select('itineraire_id')
+      .eq('user_id', /* id utilisateur courant */ 'dfd2a3c6-34c2-4fa1-a6b3-b710d133d993');
+    if (error) {
+      console.error('Erreur récupération favoris:', error.message);
+      return [];
+    }
+    // Ensuite, requête pour récupérer les itinéraires correspondants
+    if (data && data.length > 0) {
+      const ids = data.map((fav: any) => fav.itineraire_id);
+      const { data: itinData, error: itinError } = await supabase
+        .from('itineraires')
+        .select('*')
+        .in('id', ids);
+      if (itinError) {
+        console.error('Erreur récupération itinéraires favoris:', itinError.message);
+        return [];
       }
-    ];
+      return itinData as ItineraireUser[];
+    }
+    return [];
   }
 }
 

@@ -1,19 +1,57 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Comment } from '../types/Comment';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { supabase } from '../supabaseClient';
 
 interface CommentCardProps {
   comment: Comment;
   onLike: (commentId: string) => void;
-  onUserPress?: (userId: string) => void; // Nouvelle prop
+  onUserPress?: (userId: string) => void;
 }
 
 export default function CommentCard({ comment, onLike, onUserPress }: CommentCardProps) {
+  const [userName, setUserName] = useState<string>('Utilisateur');
+  const [avatar, setAvatar] = useState<string>('https://via.placeholder.com/40');
+  const [targetName, setTargetName] = useState<string>('Lieu inconnu');
+
+  useEffect(() => {
+    async function fetchUser() {
+      if (comment.user_id) {
+        const { data } = await supabase
+          .from('users')
+          .select('pseudo, photo_profil')
+          .eq('id', comment.user_id)
+          .single();
+        if (data) {
+          setUserName(data.pseudo || 'Utilisateur');
+          setAvatar(data.photo_profil || 'https://via.placeholder.com/40');
+        }
+      }
+    }
+    fetchUser();
+  }, [comment.user_id]);
+
+  useEffect(() => {
+    async function fetchTargetName() {
+      if (comment.target_type && comment.target_id) {
+        let table = comment.target_type === 'spot' ? 'spots' : 'itineraires';
+        const { data } = await supabase
+          .from(table)
+          .select('nom')
+          .eq('id', comment.target_id)
+          .single();
+        if (data && data.nom) {
+          setTargetName(data.nom);
+        }
+      }
+    }
+    fetchTargetName();
+  }, [comment.target_type, comment.target_id]);
+
   const formatDate = (date: Date) => {
     const now = new Date();
     const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-    
     if (diffInHours < 1) return 'Il y a quelques minutes';
     if (diffInHours < 24) return `Il y a ${diffInHours}h`;
     if (diffInHours < 48) return 'Hier';
@@ -32,16 +70,16 @@ export default function CommentCard({ comment, onLike, onUserPress }: CommentCar
   };
 
   const getTargetIcon = () => {
-    return comment.targetType === 'spot' ? 'location' : 'map';
+    return comment.target_type === 'spot' ? 'location' : 'map';
   };
 
   const getTargetColor = () => {
-    return comment.targetType === 'spot' ? '#FF9900' : '#34573E';
+    return comment.target_type === 'spot' ? '#FF9900' : '#34573E';
   };
 
   const handleUserPress = () => {
     if (onUserPress) {
-      onUserPress(comment.utilisateur.id);
+      onUserPress(comment.user_id);
     }
   };
 
@@ -51,19 +89,18 @@ export default function CommentCard({ comment, onLike, onUserPress }: CommentCar
       <View style={styles.header}>
         <TouchableOpacity style={styles.userInfo} onPress={handleUserPress}>
           <Image
-            source={{ uri: comment.utilisateur.avatar || 'https://via.placeholder.com/40' }}
+            source={{ uri: avatar }}
             style={styles.avatar}
           />
           <View>
-            <Text style={styles.userName}>{comment.utilisateur.nom}</Text>
-            <Text style={styles.timeStamp}>{formatDate(comment.createdAt)}</Text>
+            <Text style={styles.userName}>{userName}</Text>
+            <Text style={styles.timeStamp}>{formatDate(new Date(comment.created_at))}</Text>
           </View>
         </TouchableOpacity>
-        
         <View style={styles.targetInfo}>
           <Ionicons name={getTargetIcon()} size={16} color={getTargetColor()} />
           <Text style={[styles.targetName, { color: getTargetColor() }]}>
-            {comment.targetName}
+            {targetName}
           </Text>
         </View>
       </View>

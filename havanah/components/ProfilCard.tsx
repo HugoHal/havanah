@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { 
   View, 
   Text, 
@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { User } from '../types/User';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { supabase } from '../supabaseClient';
 
 interface ProfilCardProps {
   user: User;
@@ -25,6 +26,12 @@ const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
 export default function ProfilCard({ user, visible, onClose }: ProfilCardProps) {
   const slideAnim = useRef(new Animated.Value(screenHeight)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
+  const [stats, setStats] = useState({
+    nbItinerairesCreees: 0,
+    nbItinerairesFaits: 0,
+    nbSpotsFaits: 0,
+    kmParcourus: 0,
+  });
 
   useEffect(() => {
     if (visible) {
@@ -57,6 +64,32 @@ export default function ProfilCard({ user, visible, onClose }: ProfilCardProps) 
       ]).start();
     }
   }, [visible]);
+
+  useEffect(() => {
+    async function fetchStats() {
+      if (user?.id) {
+        // Itinéraires créés
+        const { count: nbItinerairesCreees } = await supabase
+          .from('itineraires')
+          .select('*', { count: 'exact', head: true })
+          .eq('creator_id', user.id);
+
+        // Itinéraires faits
+        const { count: nbItinerairesFaits } = await supabase
+          .from('itineraire_visites')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id);
+
+        setStats({
+          nbItinerairesCreees: nbItinerairesCreees ?? 0,
+          nbItinerairesFaits: nbItinerairesFaits ?? 0,
+          nbSpotsFaits: 0,       // à calculer si tu as la table
+          kmParcourus: 0,        // à calculer si tu as la table
+        });
+      }
+    }
+    fetchStats();
+  }, [user?.id]);
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('fr-FR', { 
@@ -116,7 +149,9 @@ export default function ProfilCard({ user, visible, onClose }: ProfilCardProps) 
               
               <Text style={styles.pseudo}>{user.pseudo}</Text>
               <Text style={styles.memberSince}>
-                Membre depuis {formatDate(user.dateCreation)}
+                Membre depuis {user.date_creation
+                  ? formatDate(new Date(user.date_creation))
+                  : 'Date inconnue'}
               </Text>
             </View>
             
@@ -155,25 +190,25 @@ export default function ProfilCard({ user, visible, onClose }: ProfilCardProps) 
               <View style={styles.statsGrid}>
                 <View style={styles.statItem}>
                   <Ionicons name="create" size={24} color="#34573E" />
-                  <Text style={styles.statNumber}>{user.statistiques.nbItinerairesCreees}</Text>
+                  <Text style={styles.statNumber}>{stats.nbItinerairesCreees}</Text>
                   <Text style={styles.statLabel}>Itinéraires créés</Text>
                 </View>
                 
                 <View style={styles.statItem}>
                   <Ionicons name="checkmark-circle" size={24} color="#FF9900" />
-                  <Text style={styles.statNumber}>{user.statistiques.nbItinerairesFaits}</Text>
+                  <Text style={styles.statNumber}>{stats.nbItinerairesFaits}</Text>
                   <Text style={styles.statLabel}>Itinéraires faits</Text>
                 </View>
                 
                 <View style={styles.statItem}>
                   <Ionicons name="location" size={24} color="#82A189" />
-                  <Text style={styles.statNumber}>{user.statistiques.nbSpotsFaits}</Text>
+                  <Text style={styles.statNumber}>{stats.nbSpotsFaits}</Text>
                   <Text style={styles.statLabel}>Spots visités</Text>
                 </View>
                 
                 <View style={styles.statItem}>
                   <Ionicons name="car" size={24} color="#E7D4BB" />
-                  <Text style={styles.statNumber}>{user.statistiques.kmParcourus.toLocaleString()}</Text>
+                  <Text style={styles.statNumber}>{stats.kmParcourus.toLocaleString()}</Text>
                   <Text style={styles.statLabel}>Km parcourus</Text>
                 </View>
               </View>
@@ -183,28 +218,28 @@ export default function ProfilCard({ user, visible, onClose }: ProfilCardProps) 
             <View style={styles.badgesSection}>
               <Text style={styles.sectionTitle}>Badges</Text>
               <View style={styles.badgesContainer}>
-                {user.statistiques.nbItinerairesFaits >= 10 && (
+                {stats.nbItinerairesFaits >= 10 && (
                   <View style={styles.badge}>
                     <Ionicons name="trophy" size={20} color="#FFD700" />
                     <Text style={styles.badgeText}>Explorateur</Text>
                   </View>
                 )}
                 
-                {user.statistiques.nbSpotsFaits >= 50 && (
+                {stats.nbSpotsFaits >= 50 && (
                   <View style={styles.badge}>
                     <Ionicons name="star" size={20} color="#FF9900" />
                     <Text style={styles.badgeText}>Découvreur</Text>
                   </View>
                 )}
                 
-                {user.statistiques.kmParcourus >= 10000 && (
+                {stats.kmParcourus >= 10000 && (
                   <View style={styles.badge}>
                     <Ionicons name="car-sport" size={20} color="#34573E" />
                     <Text style={styles.badgeText}>Grand Voyageur</Text>
                   </View>
                 )}
                 
-                {user.statistiques.nbItinerairesCreees >= 5 && (
+                {stats.nbItinerairesCreees >= 5 && (
                   <View style={styles.badge}>
                     <Ionicons name="map" size={20} color="#82A189" />
                     <Text style={styles.badgeText}>Créateur</Text>

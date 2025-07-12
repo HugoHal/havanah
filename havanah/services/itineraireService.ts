@@ -1,5 +1,6 @@
 // services/itineraireService.ts
 import { Itineraire } from '../types/Itineraire';
+import { supabase } from '../supabaseClient';
 
 const MOCK_ITINERAIRES: Record<'court' | 'moyen' | 'long' | 'aventure' | 'decouverte', Itineraire> = {
   court: {
@@ -248,8 +249,6 @@ export const getItinerairesByType = (type: 'balnéaire' | 'montagne' | 'culturel
   );
 };
 
-import { supabase } from '../supabaseClient';
-
 async function testSupabaseConnection() {
   const { data, error } = await supabase.from('users').select().limit(1);
   if (error) {
@@ -260,3 +259,29 @@ async function testSupabaseConnection() {
 }
 
 testSupabaseConnection();
+
+export async function getUserItinerairesWithSpots(userId: string) {
+  const { data: itinData, error } = await supabase
+    .from('itineraires')
+    .select(`
+      *,
+      itineraire_spot(
+        ordre,
+        spot:spots(*)
+      )
+    `)
+    .eq('creator_id', userId);
+
+  if (error) {
+    console.error(error);
+    return [];
+  }
+
+  // Mapping pour avoir un tableau de spots ordonnés dans chaque itineraire
+  return itinData.map(itin => ({
+    ...itin,
+    spots: (itin.itineraire_spot ?? [])
+      .sort((a, b) => a.ordre - b.ordre)
+      .map(s => s.spot),
+  }));
+}

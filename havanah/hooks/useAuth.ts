@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { authService } from '../services/authService';
+import { supabase } from '../supabaseClient';
 
 export function useAuth() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -10,28 +10,26 @@ export function useAuth() {
   }, []);
 
   const checkAuthStatus = async () => {
-    try {
-      const authenticated = await authService.checkAuthStatus();
-      setIsAuthenticated(authenticated);
-    } catch (error) {
-      console.error('Erreur lors de la vérification d\'authentification:', error);
-      setIsAuthenticated(false);
-    } finally {
-      setLoading(false);
-    }
+    const session = await supabase.auth.getSession();
+    setIsAuthenticated(!!session.data.session);
+    setLoading(false);
   };
 
   const login = async (email: string, password: string) => {
-    const result = await authService.login(email, password);
-    if (result.success) {
-      setIsAuthenticated(true);
-    }
-    return result;
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    setIsAuthenticated(!!data.session);
+    return { success: !!data.session, message: error?.message };
   };
 
   const logout = async () => {
-    await authService.logout();
+    await supabase.auth.signOut();
     setIsAuthenticated(false);
+  };
+
+  const signup = async (email: string, password: string) => {
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    setIsAuthenticated(!!data.session);
+    return { success: !!data.session, message: error?.message };
   };
 
   return {
@@ -39,6 +37,7 @@ export function useAuth() {
     loading,
     login,
     logout,
+    signup,
     checkAuthStatus,
   };
 }
