@@ -144,9 +144,7 @@ export default function CarteSpots() {
         onMapReady={handleMapReady}
       >
         {spots.map((spot) => {
-          console.log('Spot:', spot.nom, 'Geom:', spot.geom);
           const coords = parseGeom(spot.geom);
-          console.log('Spot:', spot.nom, 'Coords:', coords);
           if (!coords) return null;
           return (
             <Marker
