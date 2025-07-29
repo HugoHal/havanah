@@ -8,29 +8,14 @@ interface SpotVisiteCardProps {
 }
 
 export default function SpotVisiteCard({ spotVisite }: SpotVisiteCardProps) {
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('fr-FR', {
+  const formatDate = (date?: Date | string) => {
+    if (!date) return 'Date inconnue';
+    const d = typeof date === 'string' ? new Date(date) : date;
+    return isNaN(d.getTime()) ? 'Date inconnue' : d.toLocaleDateString('fr-FR', {
       day: 'numeric',
       month: 'short',
       year: 'numeric'
     });
-  };
-
-  const renderStars = (note?: number) => {
-    if (!note) return null;
-    
-    return (
-      <View style={styles.starsContainer}>
-        {Array.from({ length: 5 }, (_, index) => (
-          <Ionicons
-            key={index}
-            name={index < note ? "star" : "star-outline"}
-            size={14}
-            color={index < note ? "#FFD700" : "#ccc"}
-          />
-        ))}
-      </View>
-    );
   };
 
   return (
@@ -38,29 +23,14 @@ export default function SpotVisiteCard({ spotVisite }: SpotVisiteCardProps) {
       <View style={styles.header}>
         <View style={styles.spotInfo}>
           <Ionicons name="location" size={18} color="#FF9900" />
-          <Text style={styles.spotName}>{spotVisite.nomSpot}</Text>
+          <Text style={styles.spotName}>{spotVisite.nom}</Text>
         </View>
-        <Text style={styles.date}>{formatDate(spotVisite.dateVisite)}</Text>
+        <Text style={styles.date}>
+          {formatDate(spotVisite.date_visite)}
+        </Text>
       </View>
-      
-      {spotVisite.note && (
-        <View style={styles.ratingContainer}>
-          <Text style={styles.ratingLabel}>Ma note :</Text>
-          {renderStars(spotVisite.note)}
-          <Text style={styles.ratingText}>({spotVisite.note}/5)</Text>
-        </View>
-      )}
-      
-      {spotVisite.commentaire && (
-        <Text style={styles.commentaire}>{spotVisite.commentaire}</Text>
-      )}
-      
-      {spotVisite.photos && spotVisite.photos.length > 0 && (
-        <View style={styles.photosIndicator}>
-          <Ionicons name="camera" size={16} color="#666" />
-          <Text style={styles.photosCount}>{spotVisite.photos.length} photo(s)</Text>
-        </View>
-      )}
+      <Text style={styles.description}>{spotVisite.description}</Text>
+      {/* Ajoute d'autres infos si besoin */}
     </TouchableOpacity>
   );
 }
@@ -133,5 +103,11 @@ const styles = StyleSheet.create({
   photosCount: {
     fontSize: 12,
     color: '#666',
+  },
+  description: {
+    fontSize: 14,
+    color: '#333',
+    lineHeight: 20,
+    marginBottom: 8,
   },
 });

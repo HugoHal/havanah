@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
+import { createUserProfile } from '../services/authService';
 
 export function useAuth() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -29,6 +30,12 @@ export function useAuth() {
   const signup = async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signUp({ email, password });
     setIsAuthenticated(!!data.session);
+
+    // Appeler la création du profil utilisateur après inscription réussie
+    if (data.session && !error) {
+      await createUserProfile();
+    }
+
     return { success: !!data.session, message: error?.message };
   };
 

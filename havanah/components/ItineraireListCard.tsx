@@ -9,13 +9,15 @@ interface ItineraireListCardProps {
   showCompleted?: boolean;
 }
 
-export default function ItineraireListCard({ itineraire, showCompleted = false }: ItineraireListCardProps) {
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('fr-FR');
+export default function ItineraireListCard({ itineraire, showCompleted = false, onPress }: ItineraireListCardProps & { onPress?: () => void }) {
+  const formatDate = (date?: Date | string) => {
+    if (!date) return 'Date inconnue';
+    const d = typeof date === 'string' ? new Date(date) : date;
+    return isNaN(d.getTime()) ? 'Date inconnue' : d.toLocaleDateString('fr-FR');
   };
 
   return (
-    <TouchableOpacity style={styles.container}>
+    <TouchableOpacity style={styles.container} onPress={onPress}>
       <View style={styles.header}>
         <View style={styles.titleContainer}>
           <Text style={styles.title}>{itineraire.nom}</Text>
@@ -35,9 +37,7 @@ export default function ItineraireListCard({ itineraire, showCompleted = false }
           </View>
         </View>
         <Text style={styles.date}>
-          {itineraire.created_at
-            ? new Date(itineraire.created_at).toLocaleDateString('fr-FR')
-            : 'Date inconnue'}
+          {formatDate(itineraire.date_visite ?? itineraire.created_at)}
         </Text>
       </View>
       
@@ -68,9 +68,12 @@ export default function ItineraireListCard({ itineraire, showCompleted = false }
       <CO2Badge co2Economise={itineraire.co2Economise} size="small" style={styles.co2Badge} />
       
       <Text style={styles.spotsCount}>
-        {(itineraire.spots?.length ?? 0)} spots •
+        {(itineraire.spots?.length ?? 0)} spots
         {itineraire.spots?.length > 0
-          ? ` ${itineraire.spots[0].nom}...`
+          ? ` • ${itineraire.spots
+              .map(s => typeof s.nom === 'string' ? s.nom : '')
+              .filter(nom => nom)
+              .join(', ')}`
           : ''}
       </Text>
     </TouchableOpacity>

@@ -114,8 +114,8 @@ export default function ItinerairesScreen() {
                     <Text style={styles.myItineraireName}>{item.nom}</Text>
                     <Text style={styles.myItineraireDesc} numberOfLines={2}>{item.description}</Text>
                     <Text style={styles.myItineraireInfo}>{item.duree} jours • {item.distance} km</Text>
-                    {/* ✅ Ajout du CO2 économisé */}
-                    <CO2Badge co2Economise={item.co2Economise} size="small" style={styles.co2Badge} />
+                    {/* ✅ Ajout du mapping correct pour le badge */}
+                    <CO2Badge co2Economise={item.co2Economise ?? item.co2_economise ?? 0} size="small" style={styles.co2Badge} />
                   </TouchableOpacity>
                 )}
               />
@@ -143,8 +143,8 @@ export default function ItinerairesScreen() {
                     <Text style={styles.myItineraireName}>{item.nom}</Text>
                     <Text style={styles.myItineraireDesc} numberOfLines={2}>{item.description}</Text>
                     <Text style={styles.myItineraireInfo}>{item.duree} jours • {item.distance} km</Text>
-                    {/* ✅ Ajout du CO2 économisé */}
-                    <CO2Badge co2Economise={item.co2Economise} size="small" style={styles.co2Badge} />
+                    {/* ✅ Ajout du mapping correct pour le badge */}
+                    <CO2Badge co2Economise={item.co2Economise ?? item.co2_economise ?? 0} size="small" style={styles.co2Badge} />
                   </TouchableOpacity>
                 )}
               />

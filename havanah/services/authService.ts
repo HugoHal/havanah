@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { supabase } from '../supabaseClient';
 
 const AUTH_KEY = 'havanah_auth_token';
 
@@ -52,3 +53,29 @@ class AuthService {
 }
 
 export const authService = new AuthService();
+
+export async function createUserProfile() {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData?.session?.user?.id;
+  const email = sessionData?.session?.user?.email;
+  if (!userId) return;
+
+  const { data: existing } = await supabase
+    .from('users')
+    .select('id')
+    .eq('id', userId)
+    .single();
+
+  if (!existing) {
+    await supabase
+      .from('users')
+      .insert([{
+        id: userId,
+        email: email,
+        pseudo: email?.split('@')[0] || 'nouvel_utilisateur',
+        date_creation: new Date().toISOString(),
+        bio: '',
+        photo_profil: null
+      }]);
+  }
+}

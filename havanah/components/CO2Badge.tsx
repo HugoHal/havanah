@@ -40,7 +40,7 @@ export default function CO2Badge({ co2Economise, style, size = 'medium' }: CO2Ba
   return (
     <View style={[sizeStyles.container, style]}>
       <Ionicons name="leaf" size={sizeStyles.icon} color="#4CAF50" />
-      <Text style={sizeStyles.value}>{co2Economise}</Text>
+      <Text style={sizeStyles.value}>{co2Economise ?? 0}</Text>
       <Text style={sizeStyles.text}>kg CO₂</Text>
     </View>
   );

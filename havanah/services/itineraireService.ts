@@ -280,8 +280,134 @@ export async function getUserItinerairesWithSpots(userId: string) {
   // Mapping pour avoir un tableau de spots ordonnés dans chaque itineraire
   return itinData.map(itin => ({
     ...itin,
+    co2Economise: itin.co2_economise, // ✅ mapping correct pour le badge
     spots: (itin.itineraire_spot ?? [])
       .sort((a, b) => a.ordre - b.ordre)
-      .map(s => s.spot),
+      .map(s => s.spot && typeof s.spot === 'object' ? s.spot : s),
   }));
+}
+
+export async function getItinerairesFaitsWithSpots(userId: string) {
+  // 1. Récupérer les ids des itinéraires faits
+  const { data: visites, error: visitesError } = await supabase
+    .from('itineraire_visites')
+    .select('itineraire_id')
+    .eq('user_id', userId);
+
+  if (visitesError || !visites) return [];
+
+  const ids = visites.map(v => v.itineraire_id);
+  if (ids.length === 0) return [];
+
+  // 2. Récupérer les itinéraires + spots associés
+  const { data: itinData, error: itinError } = await supabase
+    .from('itineraires')
+    .select(`
+      *,
+      itineraire_spot(
+        ordre,
+        spot:spots(*)
+      )
+    `)
+    .in('id', ids);
+
+  if (itinError || !itinData) return [];
+
+  // 3. Mapping pour avoir un tableau de spots ordonnés dans chaque itineraire
+  return itinData.map(itin => {
+    console.log('Itinéraire:', itin.nom, 'CO2 économisé:', itin.co2Economise);
+    return {
+      ...itin,
+      spots: (itin.itineraire_spot ?? [])
+        .sort((a, b) => a.ordre - b.ordre)
+        .map(s => s.spot && typeof s.spot === 'object' ? s.spot : s),
+    };
+  });
+}
+
+export async function getItinerairesFaitsWithSpotsAndDate(userId: string) {
+  // 1. Récupérer les ids des itinéraires faits + date_visite
+  const { data: visites, error: visitesError } = await supabase
+    .from('itineraire_visites')
+    .select('itineraire_id, date_visite')
+    .eq('user_id', userId);
+
+  if (visitesError || !visites) return [];
+
+  const ids = visites.map(v => v.itineraire_id);
+  if (ids.length === 0) return [];
+
+  // 2. Récupérer les itinéraires + spots associés
+  const { data: itinData, error: itinError } = await supabase
+    .from('itineraires')
+    .select(`
+      *,
+      itineraire_spot(
+        ordre,
+        spot:spots(*)
+      )
+    `)
+    .in('id', ids);
+
+  if (itinError || !itinData) return [];
+  
+  console.log('Itinéraires récupérés:', itinData);
+
+  // 3. Fusionner chaque itinéraire avec sa date_visite
+  return itinData.map(itin => {
+    // Cherche la visite correspondant à cet itinéraire
+    const visite = visites.find(v => v.itineraire_id === itin.id);
+    return {
+      ...itin,
+      co2Economise: itin.co2_economise, // ✅ mapping correct
+      date_visite: visite?.date_visite ?? null,
+      spots: (itin.itineraire_spot ?? [])
+        .sort((a, b) => a.ordre - b.ordre)
+        .map(s => s.spot && typeof s.spot === 'object' ? s.spot : s),
+    };
+  });
+}
+
+export async function getSpotsFromItinerairesFaits(userId: string) {
+  // 1. Récupérer les ids des itinéraires faits + date_visite
+  const { data: visites, error: visitesError } = await supabase
+    .from('itineraire_visites')
+    .select('itineraire_id, date_visite')
+    .eq('user_id', userId);
+
+  if (visitesError || !visites) return [];
+
+  // 2. Récupérer les spots associés à ces itinéraires
+  const { data: itinSpots, error: itinSpotsError } = await supabase
+    .from('itineraire_spot')
+    .select('itineraire_id, spot_id')
+    .in('itineraire_id', visites.map(v => v.itineraire_id));
+
+  if (itinSpotsError || !itinSpots) return [];
+
+  // 3. Associer chaque spot à sa date_visite
+  const spotVisits = itinSpots.map(s => {
+    const visite = visites.find(v => v.itineraire_id === s.itineraire_id);
+    return {
+      spot_id: s.spot_id,
+      date_visite: visite?.date_visite ?? null
+    };
+  });
+
+  const spotIds = [...new Set(spotVisits.map(sv => sv.spot_id))];
+  if (spotIds.length === 0) return [];
+
+  // 4. Récupérer les données des spots
+  const { data: spots, error: spotsError } = await supabase
+    .from('spots')
+    .select('*')
+    .in('id', spotIds);
+
+  if (spotsError || !spots) return [];
+
+  // 5. Fusionner les infos spot + date_visite
+  return spotVisits.map(sv => {
+    const spot = spots.find(s => s.id === sv.spot_id);
+    return spot ? { ...spot, date_visite: sv.date_visite } : null;
+  }).filter(Boolean);
 }

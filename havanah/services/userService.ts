@@ -3,16 +3,21 @@ import { User, ItineraireUser, SpotVisite } from '../types/User';
 
 class UserService {
   async getCurrentUser(): Promise<User | null> {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    if (!userId) return null;
+
     const { data, error } = await supabase
       .from('users')
       .select('*')
-      .limit(1);
+      .eq('id', userId)
+      .maybeSingle();
+
     if (error) {
       console.error('Erreur récupération user:', error.message);
       return null;
     }
-    // Adapter selon la structure de ta table
-    return data && data.length > 0 ? data[0] as User : null;
+    return data as User;
   }
 
   async getUserItineraires(): Promise<ItineraireUser[]> {
@@ -67,6 +72,21 @@ class UserService {
       return itinData as ItineraireUser[];
     }
     return [];
+  }
+
+  async uploadProfilePhoto(photoBase64: string): Promise<void> {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    if (!userId) throw new Error('Utilisateur non connecté');
+
+    const { error } = await supabase
+      .from('users')
+      .update({ photo_profil: photoBase64 })
+      .eq('id', userId);
+
+    if (error) {
+      throw new Error(error.message);
+    }
   }
 }
 

@@ -15,7 +15,7 @@ import { Itineraire, DetailedRoute } from '../types/Itineraire';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import ItineraireMap from './ItineraireMap';
 import NavigationView from './NavigationView';
-import CO2Badge from './CO2Badge'; // ✅ Import ajouté
+import CO2Badge from './CO2Badge';
 
 interface ItineraireFicheProps {
   itineraire: Itineraire;
@@ -207,27 +207,26 @@ export default function ItineraireFiche({ itineraire, visible, onClose }: Itiner
             <View style={styles.infosRow}>
               <View style={styles.infoItem}>
                 <Ionicons name="time" size={18} color="#34573E" />
-                <Text style={styles.infoText}>{itineraire.duree}</Text>
+                <Text style={styles.infoText}>{itineraire.duree} jours</Text>
               </View>
               <View style={styles.infoItem}>
                 <Ionicons name="car" size={18} color="#34573E" />
-                <Text style={styles.infoText}>{itineraire.distance}</Text>
+                <Text style={styles.infoText}>{itineraire.distance} km</Text>
               </View>
               <View style={styles.infoItem}>
                 <Ionicons name="star" size={18} color="#FF9900" />
-                <Text style={styles.infoText}>{itineraire.note}/5</Text>
+                <Text style={styles.infoText}>{itineraire.note} / 5</Text>
               </View>
-              {/* ✅ Ajout du CO2 économisé */}
-              <CO2Badge co2Economise={itineraire.co2Economise} size="small" />
+              {/* ✅ Remet la vignette CO2 */}
+              <CO2Badge co2Economise={itineraire.co2Economise} size="small" style={{ marginLeft: 8 }} />
             </View>
             
             <Text style={styles.spotsTitle}>Spots inclus :</Text>
             {itineraire.spots.map((spot, index) => (
               <View key={index} style={styles.spotContainer}>
-                <Text style={styles.spotItem}>• {spot}</Text>
-                <Text style={styles.spotDescription}>
-                  Description détaillée de ce spot magnifique avec toutes les informations utiles...
-                </Text>
+                <Text style={styles.spotItem}>{spot.nom}</Text>
+                <Text style={styles.spotDescription}>{spot.description}</Text>
+                {/* Ajoute d'autres propriétés si besoin */}
               </View>
             ))}
             

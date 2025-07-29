@@ -8,18 +8,22 @@ import {
   TouchableOpacity, 
   ActivityIndicator,
   RefreshControl,
-  Alert 
+  Alert,
+  Modal,
+  TextInput
 } from 'react-native';
 import { Stack } from "expo-router";
 import { User, ItineraireUser, SpotVisite } from '../types/User';
 import { userService } from '../services/userService';
-import { getUserItinerairesWithSpots } from '../services/itineraireService';
+import { getUserItinerairesWithSpots, getItinerairesFaitsWithSpotsAndDate } from '../services/itineraireService';
+import { getSpotsFromItinerairesFaits } from '../services/itineraireService';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import ItineraireListCard from '../components/ItineraireListCard';
 import SpotVisiteCard from '../components/SpotVisiteCard';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../supabaseClient';
+import ItineraireFiche from '../components/ItineraireFiche'; // Assure-toi que l'import existe
 
 type TabType = 'stats' | 'itineraires' | 'faits' | 'spots';
 
@@ -37,7 +41,11 @@ export default function ProfilScreen() {
     nbSpotsFaits: 0,
     kmParcourus: 0,
   });
+  const [editBioVisible, setEditBioVisible] = useState(false);
+  const [bioInput, setBioInput] = useState('');
   const { logout } = useAuth();
+  const [selectedItineraire, setSelectedItineraire] = useState(null);
+  const [itineraireModalVisible, setItineraireModalVisible] = useState(false);
 
   const loadData = async () => {
     try {
@@ -47,8 +55,8 @@ export default function ProfilScreen() {
       let spotsData: SpotVisite[] = [];
       if (userData?.id) {
         itinerairesData = await getUserItinerairesWithSpots(userData.id);
-        faitsData = await userService.getItinerairesFaits();
-        spotsData = await userService.getSpotsVisites();
+        faitsData = await getItinerairesFaitsWithSpotsAndDate(userData.id);
+        spotsData = await getSpotsFromItinerairesFaits(userData.id); // <-- nouvelle fonction
       }
       setUser(userData);
       setUserItineraires(itinerairesData);
@@ -116,6 +124,43 @@ export default function ProfilScreen() {
         }
       ]
     );
+  };
+
+  const handleEditBio = () => {
+    setBioInput(user?.bio ?? '');
+    setEditBioVisible(true);
+  };
+
+  const handleSaveBio = async () => {
+    console.log('Tentative de sauvegarde de la bio:', bioInput, 'pour user:', user?.id);
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ bio: bioInput })
+        .eq('id', user?.id);
+
+      if (error) {
+        console.log('Erreur Supabase:', error);
+        Alert.alert('Erreur', "Impossible de modifier la bio");
+      } else {
+        console.log('Bio modifiée avec succès');
+        setUser(prev => prev ? { ...prev, bio: bioInput } : prev);
+        setEditBioVisible(false);
+      }
+    } catch (e) {
+      console.log('Exception JS:', e);
+      Alert.alert('Erreur', "Impossible de modifier la bio");
+    }
+  };
+
+  const handleItinerairePress = (itineraire) => {
+    setSelectedItineraire(itineraire);
+    setItineraireModalVisible(true);
+  };
+
+  const closeItineraireModal = () => {
+    setItineraireModalVisible(false);
+    setTimeout(() => setSelectedItineraire(null), 250);
   };
 
   useEffect(() => {
@@ -205,12 +250,86 @@ export default function ProfilScreen() {
         </TouchableOpacity>
       </View>
       
-      {user.bio && (
-        <View style={styles.bioSection}>
+      {/*
+        Affiche toujours la section bio, même si la bio est vide
+      */}
+      <View style={styles.bioSection}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <Text style={styles.bioTitle}>À propos</Text>
-          <Text style={styles.bioText}>{user.bio}</Text>
+          <TouchableOpacity onPress={handleEditBio}>
+            <Ionicons name="create-outline" size={18} color="#34573E" />
+          </TouchableOpacity>
         </View>
-      )}
+        <Text style={styles.bioText}>{user.bio ?? ''}</Text>
+      </View>
+
+      {/* Modal édition bio */}
+      <Modal
+        visible={editBioVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setEditBioVisible(false)}
+      >
+        <View style={{
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: 'rgba(0,0,0,0.3)'
+        }}>
+          <View style={{
+            backgroundColor: '#fff',
+            padding: 20,
+            borderRadius: 15,
+            width: '80%',
+            alignItems: 'center'
+          }}>
+            <Text style={{ fontWeight: 'bold', fontSize: 16, marginBottom: 10 }}>Modifier la bio</Text>
+            <TextInput
+              value={bioInput}
+              onChangeText={setBioInput}
+              style={{
+                borderWidth: 1,
+                borderColor: '#ccc',
+                borderRadius: 8,
+                padding: 10,
+                width: '100%',
+                marginBottom: 15,
+                minHeight: 60,
+                textAlignVertical: 'top'
+              }}
+              multiline
+              maxLength={300}
+              placeholder="Décris-toi..."
+            />
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <TouchableOpacity
+                style={{
+                  backgroundColor: '#34573E',
+                  padding: 10,
+                  borderRadius: 8,
+                  minWidth: 80,
+                  alignItems: 'center'
+                }}
+                onPress={handleSaveBio}
+              >
+                <Text style={{ color: '#fff', fontWeight: 'bold' }}>Enregistrer</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{
+                  backgroundColor: '#ccc',
+                  padding: 10,
+                  borderRadius: 8,
+                  minWidth: 80,
+                  alignItems: 'center'
+                }}
+                onPress={() => setEditBioVisible(false)}
+              >
+                <Text style={{ color: '#34573E', fontWeight: 'bold' }}>Annuler</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* Bouton de déconnexion */}
       <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
@@ -224,7 +343,11 @@ export default function ProfilScreen() {
     <View style={styles.content}>
       <Text style={styles.sectionTitle}>Mes itinéraires ({userItineraires.length})</Text>
       {userItineraires.map((itineraire) => (
-        <ItineraireListCard key={itineraire.id} itineraire={itineraire} />
+        <ItineraireListCard
+          key={itineraire.id}
+          itineraire={itineraire}
+          onPress={() => handleItinerairePress(itineraire)}
+        />
       ))}
     </View>
   );
@@ -233,7 +356,12 @@ export default function ProfilScreen() {
     <View style={styles.content}>
       <Text style={styles.sectionTitle}>Itinéraires réalisés ({itinerairesFaits.length})</Text>
       {itinerairesFaits.map((itineraire) => (
-        <ItineraireListCard key={itineraire.id} itineraire={itineraire} showCompleted />
+        <ItineraireListCard
+          key={itineraire.id}
+          itineraire={itineraire}
+          showCompleted
+          onPress={() => handleItinerairePress(itineraire)}
+        />
       ))}
     </View>
   );
@@ -242,7 +370,7 @@ export default function ProfilScreen() {
     <View style={styles.content}>
       <Text style={styles.sectionTitle}>Spots visités ({spotsVisites.length})</Text>
       {spotsVisites.map((spot, index) => (
-        <SpotVisiteCard key={`${spot.spotId}-${index}`} spotVisite={spot} />
+        <SpotVisiteCard key={`${spot.id}-${index}`} spotVisite={spot} />
       ))}
     </View>
   );
@@ -278,18 +406,20 @@ export default function ProfilScreen() {
         >
           {/* Section profil */}
           <View style={styles.profileSection}>
-            <TouchableOpacity onPress={handlePhotoPress} style={styles.photoContainer}>
-              {user.photoProfil ? (
-                <Image source={{ uri: user.photoProfil }} style={styles.profilePhoto} />
-              ) : (
-                <View style={styles.defaultPhoto}>
-                  <Ionicons name="person" size={40} color="#82A189" />
+            <View style={styles.photoContainer}>
+              <TouchableOpacity onPress={handlePhotoPress}>
+                {user?.photoProfil ? (
+                  <Image source={{ uri: user.photoProfil }} style={styles.profilePhoto} />
+                ) : (
+                  <View style={styles.defaultPhoto}>
+                    <Ionicons name="person" size={40} color="#82A189" />
+                  </View>
+                )}
+                <View style={styles.photoOverlay}>
+                  <Ionicons name="camera" size={18} color="#fff" />
                 </View>
-              )}
-              <View style={styles.photoOverlay}>
-                <Ionicons name="camera" size={20} color="#fff" />
-              </View>
-            </TouchableOpacity>
+              </TouchableOpacity>
+            </View>
             
             <Text style={styles.pseudo}>{user.pseudo}</Text>
             <Text style={styles.memberSince}>
@@ -338,6 +468,14 @@ export default function ProfilScreen() {
           {renderTabContent()}
         </ScrollView>
       </View>
+
+      {selectedItineraire && (
+        <ItineraireFiche
+          itineraire={selectedItineraire}
+          visible={itineraireModalVisible}
+          onClose={closeItineraireModal}
+        />
+      )}
     </>
   );
 }
@@ -537,4 +675,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+});
+
+supabase.auth.getSession().then(({ data }) => {
+  console.log('ID utilisateur connecté (auth.uid):', data?.session?.user?.id);
 });

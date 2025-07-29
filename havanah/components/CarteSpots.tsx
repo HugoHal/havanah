@@ -3,7 +3,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { StyleSheet, ActivityIndicator, Alert, View, ViewStyle } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
-import { useSpots } from "../hooks/useSpots";
+import { supabase } from "../supabaseClient"; // ✅ Import Supabase
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -11,7 +11,8 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 export default function CarteSpots() {
   const [location, setLocation] = useState<Location.LocationObjectCoords | null>(null);
   const [locationLoading, setLocationLoading] = useState(true);
-  const { spots, loading: spotsLoading } = useSpots();
+  const [spots, setSpots] = useState<any[]>([]); // ✅ Spots depuis la BDD
+  const [spotsLoading, setSpotsLoading] = useState(true);
   const mapRef = useRef<MapView>(null);
 
   useEffect(() => {
@@ -27,6 +28,24 @@ export default function CarteSpots() {
       setLocation(location.coords);
       setLocationLoading(false);
     })();
+  }, []);
+
+  useEffect(() => {
+    // Charger les spots depuis la BDD Supabase
+    async function fetchSpots() {
+      setSpotsLoading(true);
+      const { data, error } = await supabase
+        .from('spots')
+        .select('*');
+      if (error) {
+        Alert.alert("Erreur", "Impossible de charger les spots populaires");
+        setSpots([]);
+      } else {
+        setSpots(data || []);
+      }
+      setSpotsLoading(false);
+    }
+    fetchSpots();
   }, []);
 
   const handleMapReady = () => {
@@ -90,7 +109,23 @@ export default function CarteSpots() {
     }
   };
 
-  if (locationLoading || !location) {
+  function parseGeom(geom: any): { latitude: number; longitude: number } | null {
+    if (
+      geom &&
+      geom.type === "Point" &&
+      Array.isArray(geom.coordinates) &&
+      geom.coordinates.length === 2
+    ) {
+      // GeoJSON: [longitude, latitude]
+      return {
+        longitude: geom.coordinates[0],
+        latitude: geom.coordinates[1],
+      };
+    }
+    return null;
+  }
+
+  if (locationLoading || !location || spotsLoading) {
     return <ActivityIndicator style={{ flex: 1 }} size="large" />;
   }
 
@@ -108,19 +143,22 @@ export default function CarteSpots() {
         showsUserLocation={true}
         onMapReady={handleMapReady}
       >
-        {spots.map((spot) => (
-          <Marker
-            key={spot.id}
-            coordinate={{
-              latitude: spot.latitude,
-              longitude: spot.longitude,
-            }}
-            title={spot.nom}
-            description={`${spot.description} - ${spot.prix ? `${spot.prix}€` : 'Gratuit'}`}
-          >
-            {getCustomMarker(spot.type)}
-          </Marker>
-        ))}
+        {spots.map((spot) => {
+          console.log('Spot:', spot.nom, 'Geom:', spot.geom);
+          const coords = parseGeom(spot.geom);
+          console.log('Spot:', spot.nom, 'Coords:', coords);
+          if (!coords) return null;
+          return (
+            <Marker
+              key={spot.id}
+              coordinate={coords}
+              title={spot.nom}
+              description={`${spot.description} - ${spot.prix ? `${spot.prix}€` : 'Gratuit'}`}
+            >
+              {getCustomMarker(spot.type)}
+            </Marker>
+          );
+        })}
       </MapView>
     </View>
   );
