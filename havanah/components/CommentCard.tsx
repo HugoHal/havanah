@@ -14,6 +14,13 @@ export default function CommentCard({ comment, onLike, onUserPress }: CommentCar
   const [userName, setUserName] = useState<string>('Utilisateur');
   const [avatar, setAvatar] = useState<string>('https://via.placeholder.com/40');
   const [targetName, setTargetName] = useState<string>('Lieu inconnu');
+  const [isLiked, setIsLiked] = useState(comment.isLiked ?? false);
+  const [likes, setLikes] = useState(comment.likes ?? 0);
+
+  useEffect(() => {
+    setIsLiked(comment.isLiked ?? false);
+    setLikes(comment.likes ?? 0);
+  }, [comment.isLiked, comment.likes]);
 
   useEffect(() => {
     async function fetchUser() {
@@ -83,6 +90,10 @@ export default function CommentCard({ comment, onLike, onUserPress }: CommentCar
     }
   };
 
+  const handleLikePress = async () => {
+    await onLike(comment.id); // Attend la mise à jour serveur
+  };
+
   return (
     <View style={styles.container}>
       {/* En-tête avec utilisateur et cible */}
@@ -120,7 +131,7 @@ export default function CommentCard({ comment, onLike, onUserPress }: CommentCar
       <View style={styles.actions}>
         <TouchableOpacity 
           style={styles.likeButton} 
-          onPress={() => onLike(comment.id)}
+          onPress={handleLikePress}
         >
           <Ionicons 
             name={comment.isLiked ? "heart" : "heart-outline"} 

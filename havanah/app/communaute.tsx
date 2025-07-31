@@ -18,6 +18,7 @@ export default function CommunauteScreen() {
   const loadComments = async () => {
     try {
       const data = await commentService.getComments();
+      console.log('Commentaires chargés:', data);
       setComments(data);
     } catch (error) {
       console.error('Erreur lors du chargement des commentaires:', error);
@@ -34,10 +35,12 @@ export default function CommunauteScreen() {
 
   const handleLike = async (commentId: string) => {
     try {
-      const updatedComment = await commentService.toggleLike(commentId);
+      const updatedFields = await commentService.toggleLike(commentId);
       setComments(prevComments =>
         prevComments.map(comment =>
-          comment.id === commentId ? updatedComment : comment
+          comment.id === commentId
+            ? { ...comment, ...updatedFields }
+            : comment
         )
       );
     } catch (error) {
@@ -68,13 +71,16 @@ export default function CommunauteScreen() {
     loadComments();
   }, []);
 
-  const renderComment = ({ item }: { item: Comment }) => (
-    <CommentCard 
-      comment={item} 
-      onLike={handleLike} 
-      onUserPress={handleUserPress}
-    />
-  );
+  const renderComment = ({ item }: { item: Comment }) => {
+    console.log('Render CommentCard:', item.id, 'isLiked:', item.isLiked, 'likes:', item.likes);
+    return (
+      <CommentCard 
+        comment={item} 
+        onLike={handleLike} 
+        onUserPress={handleUserPress}
+      />
+    );
+  };
 
   const renderHeader = () => (
     <View style={styles.headerContainer}>
@@ -122,7 +128,7 @@ export default function CommunauteScreen() {
         <FlatList
           data={comments}
           renderItem={renderComment}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item.id} // ✅ clé unique pour chaque commentaire
           ListHeaderComponent={renderHeader}
           ListEmptyComponent={renderEmpty}
           refreshControl={
